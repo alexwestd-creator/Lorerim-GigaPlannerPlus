@@ -1,0 +1,102 @@
+{
+  "leveling": {
+    "baseLevel": 1,
+    "attributePointsPerLevel": [5, 5, 5]
+  },
+  "oghmaInfinium": {
+    "perkPoints": 3,
+    "attributeBonus": [0, 0, 0]
+  },
+  "majorSkillBonus": 10,
+  "minorSkillBonus": 5,
+  "derivedStats": [
+    {
+      "id": "magicResist",
+      "label": "Magic Resist",
+      "isPercent": true,
+      "prefactor": 1.0,
+      "threshold": 150,
+      "weights": { "health": 0, "magicka": 1, "stamina": 0 }
+    },
+    {
+      "id": "magickaRegen",
+      "label": "Magicka Regen",
+      "isPercent": true,
+      "prefactor": 8.0,
+      "threshold": 100,
+      "weights": { "health": 0, "magicka": 1, "stamina": 0 }
+    },
+    {
+      "id": "diseaseResist",
+      "label": "Disease Resist",
+      "isPercent": true,
+      "prefactor": 4.0,
+      "threshold": 100,
+      "weights": { "health": 0, "magicka": 0, "stamina": 0.6 }
+    },
+    {
+      "id": "poisonResist",
+      "label": "Poison Resist",
+      "isPercent": true,
+      "prefactor": 4.0,
+      "threshold": 140,
+      "weights": { "health": 0, "magicka": 0, "stamina": 0.4 }
+    },
+    {
+      "id": "staminaRegen",
+      "label": "Stamina Regen",
+      "isPercent": true,
+      "prefactor": 8.0,
+      "threshold": 100,
+      "weights": { "health": 0, "magicka": 0, "stamina": 1 }
+    },
+    {
+      "id": "moveSpeed",
+      "label": "Move Speed",
+      "isPercent": true,
+      "prefactor": 0.75,
+      "threshold": 125,
+      "weights": { "health": 0.2, "magicka": 0, "stamina": 0.8 }
+    },
+    {
+      "id": "carryWeight",
+      "label": "Carry Weight",
+      "isPercent": false,
+      "prefactor": 4.0,
+      "threshold": 110,
+      "weights": { "health": 0.8, "magicka": 0, "stamina": 0.2 }
+    },
+    {
+      "id": "rangedDamage",
+      "label": "Ranged Damage",
+      "isPercent": true,
+      "prefactor": 4.0,
+      "threshold": 150,
+      "weights": { "health": 0.2, "magicka": 0, "stamina": 0.8 }
+    },
+    {
+      "id": "oneHandDamage",
+      "label": "One-Hand Damage",
+      "isPercent": true,
+      "prefactor": 4.0,
+      "threshold": 150,
+      "weights": { "health": 0.5, "magicka": 0, "stamina": 0.5 }
+    },
+    {
+      "id": "twoHandDamage",
+      "label": "Two-Hand Damage",
+      "isPercent": true,
+      "prefactor": 4.0,
+      "threshold": 150,
+      "weights": { "health": 0.8, "magicka": 0, "stamina": 0.2 }
+    },
+    {
+      "id": "unarmedDamage",
+      "label": "Unarmed Damage",
+      "isPercent": false,
+      "prefactor": 4.5,
+      "threshold": 125,
+      "weights": { "health": 0.5, "magicka": 0, "stamina": 0.5 }
+    }
+  ]
+}

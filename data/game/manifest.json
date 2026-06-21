@@ -1,0 +1,33 @@
+{
+  "version": "4.0.31",
+  "name": "LoreRim",
+  "limits": {
+    "majorSkills": 3,
+    "minorSkills": 6,
+    "traits": 2,
+    "initialPerkPoints": 3,
+    "initialAttributePoints": 0
+  },
+  "skills": [
+    "smithing",
+    "heavy-armor",
+    "block",
+    "two-handed",
+    "one-handed",
+    "marksman",
+    "evasion",
+    "sneak",
+    "wayfarer",
+    "finesse",
+    "speech",
+    "alchemy",
+    "illusion",
+    "conjuration",
+    "destruction",
+    "restoration",
+    "alteration",
+    "enchanting",
+    "destiny",
+    "traits"
+  ]
+}

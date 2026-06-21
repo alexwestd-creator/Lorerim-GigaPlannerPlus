@@ -1,0 +1,120 @@
+import type { ReactNode } from "react";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface PickerListItemProps {
+  name: string;
+  isSelected: boolean;
+  isPreview?: boolean;
+  isEnabled?: boolean;
+  onSelect: () => void;
+  onPreview?: () => void;
+  leading?: ReactNode;
+}
+
+export function PickerListItem({
+  name,
+  isSelected,
+  isPreview = false,
+  isEnabled = true,
+  onSelect,
+  onPreview,
+  leading,
+}: PickerListItemProps) {
+  return (
+    <button
+      type="button"
+      disabled={!isEnabled && !isSelected}
+      onMouseEnter={onPreview}
+      onFocus={onPreview}
+      onClick={onSelect}
+      className={cn(
+        "flex w-full items-center gap-2 rounded-[var(--radius-md)] border border-transparent px-2.5 py-2 text-left transition-colors",
+        isPreview && "border-[var(--color-border)] bg-[var(--color-surface-elevated)]",
+        !isPreview && "hover:bg-[var(--color-surface-elevated)]/70",
+        isSelected && "border-[var(--color-accent)]/35 bg-[var(--color-accent)]/8",
+        !isEnabled && !isSelected && "cursor-not-allowed opacity-45",
+      )}
+    >
+      {leading}
+      <span
+        className={cn(
+          "min-w-0 flex-1 truncate text-sm font-medium",
+          isSelected ? "text-[var(--color-accent)]" : "text-[var(--color-foreground)]",
+        )}
+      >
+        {name}
+      </span>
+      {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" />}
+    </button>
+  );
+}
+
+interface PickerOptionTileProps {
+  name: string;
+  isSelected: boolean;
+  isEnabled?: boolean;
+  onSelect: () => void;
+  leading?: ReactNode;
+}
+
+export function PickerOptionTile({
+  name,
+  isSelected,
+  isEnabled = true,
+  onSelect,
+  leading,
+}: PickerOptionTileProps) {
+  return (
+    <button
+      type="button"
+      disabled={!isEnabled && !isSelected}
+      onClick={onSelect}
+      className={cn(
+        "flex items-center gap-2 rounded-[var(--radius-md)] border px-2.5 py-2 text-left transition-colors",
+        isSelected
+          ? "border-[var(--color-accent)]/40 bg-[var(--color-accent)]/8"
+          : isEnabled
+            ? "border-[var(--color-border)]/70 bg-[var(--color-surface-elevated)]/50 hover:border-[var(--color-accent-muted)] hover:bg-[var(--color-surface-elevated)]"
+            : "cursor-not-allowed border-[var(--color-border)]/50 opacity-45",
+      )}
+    >
+      {leading}
+      <span
+        className={cn(
+          "min-w-0 flex-1 truncate text-sm font-medium",
+          isSelected ? "text-[var(--color-accent)]" : "text-[var(--color-foreground)]",
+        )}
+      >
+        {name}
+      </span>
+      {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" />}
+    </button>
+  );
+}
+
+export function PickerListPanel({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "flex min-h-0 flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)]/70 bg-[var(--color-surface)]/40 p-2",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function PickerDetailPanel({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)]/70 bg-[var(--color-background)]/50",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}

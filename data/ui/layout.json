@@ -1,0 +1,16 @@
+{
+  "columns": [
+    {
+      "width": "300px",
+      "panels": ["character-setup", "attributes"]
+    },
+    {
+      "width": "1fr",
+      "panels": ["skill-trees"]
+    },
+    {
+      "width": "340px",
+      "panels": ["skill-trees-sidebar"]
+    }
+  ]
+}

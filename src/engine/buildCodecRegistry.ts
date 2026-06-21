@@ -1,0 +1,80 @@
+import type { GameData } from "@/data/schemas";
+
+export interface BuildCodecRegistry {
+  modpackVersion: string;
+  races: readonly string[];
+  standingStones: readonly string[];
+  blessings: readonly string[];
+  traits: readonly string[];
+  skills: readonly string[];
+  perks: readonly string[];
+  raceIndex: ReadonlyMap<string, number>;
+  standingStoneIndex: ReadonlyMap<string, number>;
+  blessingIndex: ReadonlyMap<string, number>;
+  traitIndex: ReadonlyMap<string, number>;
+  skillIndex: ReadonlyMap<string, number>;
+  perkIndex: ReadonlyMap<string, number>;
+}
+
+function indexById(ids: string[]): ReadonlyMap<string, number> {
+  return new Map(ids.map((id, index) => [id, index]));
+}
+
+function collectPerkIds(game: GameData): string[] {
+  const ids: string[] = [];
+  for (const skillId of game.manifest.skills) {
+    const tree = game.perkTrees[skillId];
+    if (!tree) continue;
+    for (const perk of tree.perks) {
+      ids.push(perk.id);
+    }
+  }
+  return ids;
+}
+
+export function createBuildCodecRegistry(game: GameData): BuildCodecRegistry {
+  const races = game.races.map((race) => race.id);
+  const standingStones = game.standingStones.map((stone) => stone.id);
+  const blessings = game.blessings.map((blessing) => blessing.id);
+  const traits = game.traits.map((trait) => trait.id);
+  const skills = game.skills.map((skill) => skill.id);
+  const perks = collectPerkIds(game);
+
+  return {
+    modpackVersion: game.manifest.version,
+    races,
+    standingStones,
+    blessings,
+    traits,
+    skills,
+    perks,
+    raceIndex: indexById(races),
+    standingStoneIndex: indexById(standingStones),
+    blessingIndex: indexById(blessings),
+    traitIndex: indexById(traits),
+    skillIndex: indexById(skills),
+    perkIndex: indexById(perks),
+  };
+}
+
+export function lookupIndex(
+  map: ReadonlyMap<string, number>,
+  id: string | null | undefined,
+  label: string,
+): number | undefined {
+  if (id === null || id === undefined) return undefined;
+  const index = map.get(id);
+  if (index === undefined) {
+    throw new Error(`Unknown ${label}: ${id}`);
+  }
+  return index;
+}
+
+export function lookupId(list: readonly string[], index: number | undefined, label: string): string | null {
+  if (index === undefined) return null;
+  const id = list[index];
+  if (id === undefined) {
+    throw new Error(`Invalid ${label} index: ${index}`);
+  }
+  return id;
+}

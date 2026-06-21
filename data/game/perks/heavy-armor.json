@@ -1,0 +1,57 @@
+{
+  "skillId": "heavy-armor",
+  "skillName": "Heavy Armor",
+  "perks": [
+    {
+      "id": "conditioning",
+      "name": "Conditioning",
+      "skillReq": 0,
+      "position": { "x": 55, "y": 90 },
+      "prerequisites": [],
+      "description": "You've accustomed yourself to using heavy armor.",
+      "effects": [
+        { "type": "derivedStat", "stat": "moveSpeed", "value": 5, "isPercent": true }
+      ]
+    },
+    {
+      "id": "relentless-onslaught",
+      "name": "Relentless Onslaught",
+      "skillReq": 20,
+      "position": { "x": 55, "y": 69 },
+      "prerequisites": ["conditioning"],
+      "description": "After extensive training you now can sprint in heavy armor without problems.",
+      "effects": []
+    },
+    {
+      "id": "combat-casting",
+      "name": "Combat Casting",
+      "skillReq": 25,
+      "position": { "x": 29, "y": 67 },
+      "prerequisites": ["conditioning"],
+      "description": "You are able to keep concentrated enough in heavy armor.",
+      "effects": []
+    },
+    {
+      "id": "combat-training",
+      "name": "Combat Training",
+      "skillReq": 25,
+      "position": { "x": 79, "y": 68 },
+      "prerequisites": ["conditioning"],
+      "description": "You are less hindered by your armor and can attack with ease.",
+      "effects": [
+        { "type": "derivedStat", "stat": "oneHandDamage", "value": 5, "isPercent": true }
+      ]
+    },
+    {
+      "id": "battle-mage",
+      "name": "Battle Mage",
+      "skillReq": 100,
+      "position": { "x": 23, "y": 8 },
+      "prerequisites": ["combat-casting"],
+      "description": "You have mastered spellcasting while wearing heavy armor.",
+      "effects": [
+        { "type": "derivedStat", "stat": "magicResist", "value": 10, "isPercent": true }
+      ]
+    }
+  ]
+}

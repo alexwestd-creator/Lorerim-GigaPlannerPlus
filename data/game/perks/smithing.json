@@ -1,0 +1,96 @@
+{
+  "skillId": "smithing",
+  "skillName": "Smithing",
+  "perks": [
+    {
+      "id": "craftsmanship",
+      "name": "Craftsmanship",
+      "skillReq": 40,
+      "position": { "x": 50, "y": 63 },
+      "prerequisites": [],
+      "description": "You've acquired the basics of craftsmanship and know how to properly use all kinds of tools.",
+      "effects": []
+    },
+    {
+      "id": "advanced-blacksmithing",
+      "name": "Advanced Blacksmithing",
+      "skillReq": 50,
+      "position": { "x": 50, "y": 86 },
+      "prerequisites": ["craftsmanship"],
+      "description": "You've gained quite some finesse, allowing you to craft plate armor and fine jewelry.",
+      "effects": []
+    },
+    {
+      "id": "arcane-craftsmanship",
+      "name": "Arcane Craftsmanship",
+      "skillReq": 60,
+      "position": { "x": 30, "y": 86 },
+      "prerequisites": ["advanced-blacksmithing"],
+      "description": "You've learned techniques to craft bolts and arrows that explode with elemental fury.",
+      "effects": []
+    },
+    {
+      "id": "legendary-blacksmithing",
+      "name": "Legendary Blacksmithing",
+      "skillReq": 100,
+      "position": { "x": 70, "y": 86 },
+      "prerequisites": ["advanced-blacksmithing"],
+      "description": "You can even improve the divine artifacts of Aedra and Daedra.",
+      "effects": []
+    },
+    {
+      "id": "advanced-light-armors",
+      "name": "Advanced Light Armors",
+      "skillReq": 25,
+      "position": { "x": 20, "y": 57 },
+      "prerequisites": ["craftsmanship"],
+      "description": "You've been read An Introduction to Scale Armors, allowing you to craft scale armor.",
+      "effects": []
+    },
+    {
+      "id": "elven-smithing",
+      "name": "Elven Smithing",
+      "skillReq": 50,
+      "position": { "x": 20, "y": 43 },
+      "prerequisites": ["advanced-light-armors"],
+      "description": "You've gained enough finesse to create and improve Elven armor and weapons.",
+      "effects": []
+    },
+    {
+      "id": "dwarven-smithing",
+      "name": "Dwarven Smithing",
+      "skillReq": 25,
+      "position": { "x": 80, "y": 57 },
+      "prerequisites": ["craftsmanship"],
+      "description": "You've acquired the secret knowledge of how to create Dwarven equipment.",
+      "effects": []
+    },
+    {
+      "id": "orcish-smithing",
+      "name": "Orcish Smithing",
+      "skillReq": 50,
+      "position": { "x": 80, "y": 43 },
+      "prerequisites": ["dwarven-smithing"],
+      "description": "Orcish equipment is hard to craft, but you've got what it takes.",
+      "effects": []
+    },
+    {
+      "id": "glass-smithing",
+      "name": "Glass Smithing",
+      "skillReq": 75,
+      "position": { "x": 10, "y": 14 },
+      "prerequisites": ["elven-smithing"],
+      "description": "Crafting Glass equipment is not for the unskilled.",
+      "effects": []
+    },
+    {
+      "id": "daedric-smithing",
+      "name": "Daedric Smithing",
+      "skillReq": 100,
+      "position": { "x": 50, "y": 19 },
+      "prerequisites": ["legendary-blacksmithing"],
+      "description": "The creation of daedric weapons and armor is a secret few mortals know.",
+      "effects": []
+    }
+  ]
+}

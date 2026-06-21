@@ -1,0 +1,41 @@
+{
+  "traits": [
+    {
+      "id": "bruiser",
+      "name": "Bruiser",
+      "description": "You hit harder in melee combat but carry less.",
+      "effects": [
+        { "type": "derivedStat", "stat": "oneHandDamage", "value": 10, "isPercent": true },
+        { "type": "derivedStat", "stat": "twoHandDamage", "value": 10, "isPercent": true },
+        { "type": "derivedStat", "stat": "carryWeight", "value": -25, "isPercent": false }
+      ]
+    },
+    {
+      "id": "bookworm",
+      "name": "Bookworm",
+      "description": "You learn faster from books but start with less stamina.",
+      "effects": [
+        { "type": "attribute", "stat": "magicka", "value": 25 },
+        { "type": "attribute", "stat": "stamina", "value": -15 }
+      ]
+    },
+    {
+      "id": "pack-rat",
+      "name": "Pack Rat",
+      "description": "You can carry more but move slightly slower.",
+      "effects": [
+        { "type": "derivedStat", "stat": "carryWeight", "value": 50, "isPercent": false },
+        { "type": "derivedStat", "stat": "moveSpeed", "value": -5, "isPercent": true }
+      ]
+    },
+    {
+      "id": "nimble",
+      "name": "Nimble",
+      "description": "You move faster but have less health.",
+      "effects": [
+        { "type": "derivedStat", "stat": "moveSpeed", "value": 10, "isPercent": true },
+        { "type": "attribute", "stat": "health", "value": -20 }
+      ]
+    }
+  ]
+}

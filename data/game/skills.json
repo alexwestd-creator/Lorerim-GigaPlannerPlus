@@ -1,0 +1,24 @@
+{
+  "skills": [
+    { "id": "smithing", "name": "Smithing", "category": "crafting", "majorEligible": true, "minorEligible": true },
+    { "id": "heavy-armor", "name": "Heavy Armor", "category": "combat", "majorEligible": true, "minorEligible": true },
+    { "id": "block", "name": "Block", "category": "combat", "majorEligible": true, "minorEligible": true },
+    { "id": "two-handed", "name": "Two-Handed", "category": "combat", "majorEligible": true, "minorEligible": true },
+    { "id": "one-handed", "name": "One-Handed", "category": "combat", "majorEligible": true, "minorEligible": true },
+    { "id": "marksman", "name": "Marksman", "category": "combat", "majorEligible": true, "minorEligible": true },
+    { "id": "evasion", "name": "Evasion", "category": "combat", "majorEligible": true, "minorEligible": true },
+    { "id": "sneak", "name": "Sneak", "category": "stealth", "majorEligible": true, "minorEligible": true },
+    { "id": "wayfarer", "name": "Wayfarer", "category": "utility", "majorEligible": true, "minorEligible": true },
+    { "id": "finesse", "name": "Finesse", "category": "stealth", "majorEligible": true, "minorEligible": true },
+    { "id": "speech", "name": "Speech", "category": "utility", "majorEligible": true, "minorEligible": true },
+    { "id": "alchemy", "name": "Alchemy", "category": "crafting", "majorEligible": true, "minorEligible": true },
+    { "id": "illusion", "name": "Illusion", "category": "magic", "majorEligible": true, "minorEligible": true },
+    { "id": "conjuration", "name": "Conjuration", "category": "magic", "majorEligible": true, "minorEligible": true },
+    { "id": "destruction", "name": "Destruction", "category": "magic", "majorEligible": true, "minorEligible": true },
+    { "id": "restoration", "name": "Restoration", "category": "magic", "majorEligible": true, "minorEligible": true },
+    { "id": "alteration", "name": "Alteration", "category": "magic", "majorEligible": true, "minorEligible": true },
+    { "id": "enchanting", "name": "Enchanting", "category": "crafting", "majorEligible": true, "minorEligible": true },
+    { "id": "destiny", "name": "Destiny", "category": "special", "majorEligible": false, "minorEligible": false },
+    { "id": "traits", "name": "Traits", "category": "special", "majorEligible": false, "minorEligible": false }
+  ]
+}
