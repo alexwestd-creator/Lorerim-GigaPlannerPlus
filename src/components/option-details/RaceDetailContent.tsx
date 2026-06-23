@@ -1,5 +1,6 @@
 import type { Race, Skill } from "@/data/schemas";
-import { SkillIcon } from "@/components/SkillIcon";import { formatRegenPercent } from "@/lib/parseBonuses";
+import { SkillIcon } from "@/components/SkillIcon";
+import { formatRegenPercent } from "@/lib/parseBonuses";
 import {
   DetailBulletList,
   DetailSection,

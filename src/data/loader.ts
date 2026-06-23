@@ -2,6 +2,7 @@ import manifestJson from "../../data/game/manifest.json";
 import mechanicsJson from "../../data/game/mechanics.json";
 import statsJson from "../../data/game/stats.json";
 import racesJson from "../../data/game/races.json";
+import raceEffectsJson from "../../data/game/race-effects.json";
 import birthsignsJson from "../../data/game/birthsigns.json";
 import deitiesJson from "../../data/game/deities.json";
 import characterOptionsJson from "../../data/game/character-options.json";
@@ -18,6 +19,7 @@ import {
   mechanicsSchema,
   statsSchema,
   racesSchema,
+  raceEffectsSchema,
   birthsignsSchema,
   deitiesSchema,
   characterOptionsSchema,
@@ -39,6 +41,7 @@ import {
   enrichRaceEffects,
   enrichTrait,
 } from "@/lib/enrichGameData";
+import { mergeEffects } from "@/lib/resolveOptionEffects";
 
 function parse<T>(schema: { parse: (data: unknown) => T }, data: unknown, name: string): T {
   try {
@@ -65,9 +68,10 @@ export function loadAppData(): AppData {
   const mechanics = parse(mechanicsSchema, mechanicsJson, "mechanics.json");
   const stats = parse(statsSchema, statsJson, "stats.json");
   const { races: rawRaces } = parse(racesSchema, racesJson, "races.json");
+  const raceEffects = parse(raceEffectsSchema, raceEffectsJson, "race-effects.json");
   const races = rawRaces.map((race) => ({
     ...race,
-    effects: enrichRaceEffects(race),
+    effects: mergeEffects(enrichRaceEffects(race), raceEffects[race.id] ?? []),
   }));
   const { birthsigns: rawBirthsigns } = parse(birthsignsSchema, birthsignsJson, "birthsigns.json");
   const birthsigns = rawBirthsigns.map(enrichBirthsign);

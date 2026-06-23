@@ -21,8 +21,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { GameData } from "@/data/schemas";
 import {
-  decodeBuild,
-  encodeBuild,
+  decodeBuildPackage,
+  encodeSavedBuild,
 } from "@/engine/buildCodec";
 import type { BuildState } from "@/engine/buildEngine";
 import {
@@ -45,6 +45,7 @@ import {
   getActiveSavedBuildBuild,
   getDefaultVariantName,
   normalizeSavedBuild,
+  updateSavedBuildInList,
 } from "@/store/savedBuilds";
 
 function formatUpdatedAt(timestamp: number): string {
@@ -652,7 +653,8 @@ export function BuildsPage() {
   const deleteSavedBuildSlot = useBuildStore((s) => s.deleteSavedBuildSlot);
   const renameSavedBuildSlot = useBuildStore((s) => s.renameSavedBuildSlot);
   const selectSavedBuildSlot = useBuildStore((s) => s.selectSavedBuildSlot);
-  const loadBuild = useBuildStore((s) => s.loadBuild);
+  const loadSharedBuild = useBuildStore((s) => s.loadSharedBuild);
+  const importSharedBuild = useBuildStore((s) => s.importSharedBuild);
   const importBuildAsSlot = useBuildStore((s) => s.importBuildAsSlot);
   const importBuildLibrary = useBuildStore((s) => s.importBuildLibrary);
   const reorderSavedBuildSlot = useBuildStore((s) => s.reorderSavedBuildSlot);
@@ -685,7 +687,14 @@ export function BuildsPage() {
 
   const modpackVersion = gameData.game.manifest.version;
   const activeBuild = savedBuilds.find((entry) => entry.id === activeBuildId);
-  const activeBuildCode = encodeBuild(build, gameData.game);
+  const syncedActiveBuild = activeBuild
+    ? updateSavedBuildInList(savedBuilds, activeBuildId, build).find(
+        (entry) => entry.id === activeBuildId,
+      )
+    : null;
+  const activeBuildCode = syncedActiveBuild
+    ? encodeSavedBuild(normalizeSavedBuild(syncedActiveBuild), gameData.game)
+    : "";
   const isFilteringBuilds = buildSearchQuery.trim().length > 0;
 
   const showSuccess = (message: string, context: ImportFeedback["context"]) => {
@@ -695,12 +704,12 @@ export function BuildsPage() {
 
   const handleImportCode = (replaceActive: boolean) => {
     try {
-      const decoded = decodeBuild(codeInput.trim(), gameData.game);
+      const decoded = decodeBuildPackage(codeInput.trim(), gameData.game);
       if (replaceActive) {
-        loadBuild(decoded);
+        loadSharedBuild(decoded);
         showSuccess(labels.importedToActive, "code");
       } else {
-        importBuildAsSlot(decoded);
+        importSharedBuild(decoded);
         showSuccess(labels.importedAsNew, "code");
       }
       setCodeInput("");

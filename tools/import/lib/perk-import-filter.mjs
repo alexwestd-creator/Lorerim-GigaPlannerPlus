@@ -95,10 +95,6 @@ export function isTreePerkRecord(record) {
   );
 }
 
-export function perkNamesMatch(plannerName, espName) {
-  return canonicalPerkName(plannerName) === canonicalPerkName(espName);
-}
-
 function recordMatchPriority(edid) {
   const index = RECORD_PREFIX_PRIORITY.findIndex((prefix) => edid.startsWith(prefix));
   return index === -1 ? RECORD_PREFIX_PRIORITY.length : index;

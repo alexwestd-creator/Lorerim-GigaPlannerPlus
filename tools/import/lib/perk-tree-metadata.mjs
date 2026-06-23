@@ -164,10 +164,3 @@ export function applyPerkMetadata(perk, tree, metadataIndex) {
     position,
   };
 }
-
-export function enrichPerkTreeMetadata(tree, metadataIndex) {
-  if (!metadataIndex || metadataIndex.size === 0) return tree;
-
-  tree.perks = tree.perks.map((perk) => applyPerkMetadata(perk, tree, metadataIndex));
-  return tree;
-}

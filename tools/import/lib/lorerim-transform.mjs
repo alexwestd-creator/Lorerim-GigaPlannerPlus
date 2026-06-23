@@ -13,7 +13,7 @@ import {
 import { parseTraitBody } from "./parse-trait-body.mjs";
 import { collectTraitAbilitySpells } from "./trait-ability-list.mjs";
 import { cleanDescription, cleanName, cleanWintersunEffectText, slugify } from "./transform-utils.mjs";
-import { parseBonusEffects, resolveBonusEffects, extractConditionalBonusDetails, mergeEffects } from "./parse-bonus-effects.mjs";
+import { parseBonusEffects, extractConditionalBonusDetails } from "./parse-bonus-effects.mjs";
 import { parseRaceData } from "./race-data-parser.mjs";
 import { detectLorerimVersion } from "./lorerim-version.mjs";
 import {

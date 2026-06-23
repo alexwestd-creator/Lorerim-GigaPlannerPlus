@@ -331,43 +331,6 @@ export async function collectImportPluginData(plugins, progress = null, options 
   };
 }
 
-export async function collectAltarBlessingMagnitudes(plugins, progress = null) {
-  const magnitudes = new Map();
-  const scan = progress?.pluginScan?.("Wintersun altar blessings", plugins.length);
-
-  for (const { pluginName, path } of plugins) {
-    const fh = await open(path, "r");
-    const offsets = await visitAsync(fh.fd);
-
-    for (const [offset, type] of offsets) {
-      if (type !== "SPEL") continue;
-
-      try {
-        const buffer = await getRecordBufferAsync(fh.fd, offset);
-        const record = tesData.getRecord(buffer);
-        if (record.compressed) continue;
-
-        const edid = getSubrecord(record, "EDID");
-        const blessing = collectAltarBlessingFromSpellBuffer(buffer, edid, pluginName);
-        if (!blessing) continue;
-
-        magnitudes.set(blessing.altarKey, {
-          magnitude: blessing.magnitude,
-          plugin: blessing.plugin,
-        });
-      } catch {
-        // Skip malformed records.
-      }
-    }
-
-    await fh.close();
-    scan?.tick(pluginName);
-  }
-
-  scan?.finish(`${formatCount(magnitudes.size)} altar keys`);
-  return magnitudes;
-}
-
 export async function readPluginRecords(pluginPath, recordTypes, pluginName = "") {
   const wanted = new Set(recordTypes);
   const needsMasters = wanted.has("PERK") || wanted.has("AVIF");

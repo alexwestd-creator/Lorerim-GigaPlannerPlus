@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  applySkillTrainingRangeChange,
   computeSkillPointsToReach,
+  computeSkillPointsSpentOnSkill,
   createInitialBuildState,
   getEarnedDestinyPerkPoints,
   getEarnedPerkPoints,
   getEarnedSkillPoints,
   getMaxAllowedSkillLevel,
   getRemainingPerkPoints,
+  getRemainingSkillPoints,
   getSkillLevelIncreaseCost,
   canSelectPerk,
   arePrerequisitesMet,
@@ -49,6 +52,32 @@ describe("buildEngine economy", () => {
     expect(getEarnedDestinyPerkPoints(game, createTestBuildState({ playerLevel: 1 }))).toBe(1);
     expect(getEarnedDestinyPerkPoints(game, createTestBuildState({ playerLevel: 5 }))).toBe(2);
     expect(getEarnedDestinyPerkPoints(game, createTestBuildState({ playerLevel: 30 }))).toBe(7);
+  });
+
+  it("waives one tier cost per training level instead of a free-through level", () => {
+    const state = createTestBuildState({
+      raceId: "nord",
+      majorSkillIds: ["block"],
+      playerLevel: 30,
+      skillLevels: { block: 30 },
+    });
+
+    const spentBefore = computeSkillPointsSpentOnSkill(game, state, "block");
+    expect(spentBefore).toBe(15);
+
+    const withTraining = applySkillTrainingRangeChange(
+      game,
+      state,
+      "block",
+      0,
+      1,
+      { ignoreTrainingCap: true },
+    );
+
+    expect(computeSkillPointsSpentOnSkill(game, withTraining, "block")).toBe(14);
+    expect(getRemainingSkillPoints(game, withTraining)).toBe(
+      getRemainingSkillPoints(game, state) + 1,
+    );
   });
 });
 

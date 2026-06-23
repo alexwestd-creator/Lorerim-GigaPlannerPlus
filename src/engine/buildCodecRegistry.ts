@@ -9,12 +9,15 @@ export interface BuildCodecRegistry {
   traits: readonly string[];
   skills: readonly string[];
   perks: readonly string[];
+  characterOptions: readonly string[];
+  characterOptionChoices: readonly (readonly string[])[];
   raceIndex: ReadonlyMap<string, number>;
   birthsignIndex: ReadonlyMap<string, number>;
   deityIndex: ReadonlyMap<string, number>;
   traitIndex: ReadonlyMap<string, number>;
   skillIndex: ReadonlyMap<string, number>;
   perkIndex: ReadonlyMap<string, number>;
+  characterOptionIndex: ReadonlyMap<string, number>;
 }
 
 function indexById(ids: string[]): ReadonlyMap<string, number> {
@@ -40,6 +43,10 @@ export function createBuildCodecRegistry(game: GameData): BuildCodecRegistry {
   const traits = game.traits.map((trait) => trait.id);
   const skills = game.skills.map((skill) => skill.id);
   const perks = collectPerkIds(game);
+  const characterOptions = game.characterOptions.map((option) => option.id);
+  const characterOptionChoices = game.characterOptions.map((option) =>
+    option.choices.map((choice) => choice.id),
+  );
 
   return {
     game,
@@ -50,12 +57,15 @@ export function createBuildCodecRegistry(game: GameData): BuildCodecRegistry {
     traits,
     skills,
     perks,
+    characterOptions,
+    characterOptionChoices,
     raceIndex: indexById(races),
     birthsignIndex: indexById(birthsigns),
     deityIndex: indexById(deities),
     traitIndex: indexById(traits),
     skillIndex: indexById(skills),
     perkIndex: indexById(perks),
+    characterOptionIndex: indexById(characterOptions),
   };
 }
 
@@ -79,4 +89,32 @@ export function lookupId(list: readonly string[], index: number | undefined, lab
     throw new Error(`Invalid ${label} index: ${index}`);
   }
   return id;
+}
+
+export function lookupCharacterOptionChoiceIndex(
+  registry: BuildCodecRegistry,
+  optionId: string,
+  choiceId: string,
+): number {
+  const optionIndex = lookupIndex(registry.characterOptionIndex, optionId, "character option");
+  const choices = registry.characterOptionChoices[optionIndex!];
+  const choiceIndex = choices.indexOf(choiceId);
+  if (choiceIndex === -1) {
+    throw new Error(`Unknown character option choice: ${optionId}/${choiceId}`);
+  }
+  return choiceIndex;
+}
+
+export function lookupCharacterOptionChoiceId(
+  registry: BuildCodecRegistry,
+  optionIndex: number,
+  choiceIndex: number,
+): string {
+  const optionId = lookupId(registry.characterOptions, optionIndex, "character option");
+  const choices = registry.characterOptionChoices[optionIndex];
+  const choiceId = choices?.[choiceIndex];
+  if (!optionId || choiceId === undefined) {
+    throw new Error(`Invalid character option choice index: ${optionIndex}/${choiceIndex}`);
+  }
+  return choiceId;
 }

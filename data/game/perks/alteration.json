@@ -28,12 +28,12 @@
         "y": 24
       },
       "prerequisites": [
-        "alteration-novice-alteration",
-        "alteration-geomancer"
+        "alteration-novice-alteration"
       ],
       "description": "By pursuing your apprenticeship in Alteration, you've gained knowledge of Apprentice level spells which you now augment while casting them with less effort.",
       "effects": [],
-      "prerequisitesAny": []
+      "prerequisitesAny": [],
+      "costsPerkPoint": true
     },
     {
       "id": "alteration-adept-alteration",
@@ -200,10 +200,13 @@
         "x": 15,
         "y": 15
       },
-      "prerequisites": [],
+      "prerequisites": [
+        "alteration-apprentice-alteration"
+      ],
       "description": "If wearing no light or heavy armor, you take 20% less physical damage from attacks while charging or concentrating on a spell.",
       "effects": [],
-      "prerequisitesAny": []
+      "prerequisitesAny": [],
+      "costsPerkPoint": true
     },
     {
       "id": "alteration-transmutation",

@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Copy, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { encodeBuild, decodeBuild, setBuildInUrl } from "@/engine/buildCodec";
+import { decodeBuildPackage, encodeSavedBuild, setBuildInUrl } from "@/engine/buildCodec";
 import { usePanelLabels, useThemeConfig } from "@/theme/ThemeProvider";
 import { useBuildStore } from "@/store/buildStore";
+import { normalizeSavedBuild, updateSavedBuildInList } from "@/store/savedBuilds";
 
 interface BuildSummaryPanelProps {
   embedded?: boolean;
@@ -15,8 +16,10 @@ export function BuildSummaryPanel({ embedded = false }: BuildSummaryPanelProps) 
   const labels = usePanelLabels("build-summary");
   const gameData = useBuildStore((s) => s.gameData);
   const build = useBuildStore((s) => s.build);
+  const savedBuilds = useBuildStore((s) => s.savedBuilds);
+  const activeBuildId = useBuildStore((s) => s.activeBuildId);
   const setDescription = useBuildStore((s) => s.setDescription);
-  const loadBuild = useBuildStore((s) => s.loadBuild);
+  const loadSharedBuild = useBuildStore((s) => s.loadSharedBuild);
   const resetBuild = useBuildStore((s) => s.resetBuild);
   const [copied, setCopied] = useState(false);
   const [codeInput, setCodeInput] = useState("");
@@ -24,7 +27,12 @@ export function BuildSummaryPanel({ embedded = false }: BuildSummaryPanelProps) 
 
   if (!gameData) return null;
 
-  const buildCode = encodeBuild(build, gameData.game);
+  const activeEntry = updateSavedBuildInList(savedBuilds, activeBuildId, build).find(
+    (entry) => entry.id === activeBuildId,
+  );
+  const buildCode = activeEntry
+    ? encodeSavedBuild(normalizeSavedBuild(activeEntry), gameData.game)
+    : "";
 
   const handleCopy = async () => {
     try {
@@ -39,8 +47,8 @@ export function BuildSummaryPanel({ embedded = false }: BuildSummaryPanelProps) 
 
   const handleLoad = () => {
     try {
-      const decoded = decodeBuild(codeInput.trim(), gameData.game);
-      loadBuild(decoded);
+      const decoded = decodeBuildPackage(codeInput.trim(), gameData.game);
+      loadSharedBuild(decoded);
       setBuildInUrl(codeInput.trim());
       setError(null);
     } catch {

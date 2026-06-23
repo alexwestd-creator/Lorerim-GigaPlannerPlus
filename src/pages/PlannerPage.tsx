@@ -1,24 +1,24 @@
 import { useEffect } from "react";
 import { LevelBar } from "@/components/LevelBar";
 import { LayoutRenderer } from "@/layout/LayoutRenderer";
-import { decodeBuild, getBuildFromUrl } from "@/engine/buildCodec";
+import { decodeBuildPackage, getBuildFromUrl } from "@/engine/buildCodec";
 import { useBuildStore } from "@/store/buildStore";
 
 export function PlannerPage() {
   const layout = useBuildStore((s) => s.gameData?.ui.layout);
   const game = useBuildStore((s) => s.gameData?.game);
-  const loadBuild = useBuildStore((s) => s.loadBuild);
+  const loadSharedBuild = useBuildStore((s) => s.loadSharedBuild);
 
   useEffect(() => {
     const urlBuild = getBuildFromUrl();
     if (!urlBuild || !game) return;
 
     try {
-      loadBuild(decodeBuild(urlBuild, game));
+      loadSharedBuild(decodeBuildPackage(urlBuild, game));
     } catch {
       // ignore invalid URL build codes
     }
-  }, [game, loadBuild]);
+  }, [game, loadSharedBuild]);
   if (!layout) return null;
 
   return (

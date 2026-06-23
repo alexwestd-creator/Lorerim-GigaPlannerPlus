@@ -14,6 +14,7 @@ function makePerk(overrides: Partial<Perk> = {}): Perk {
     prerequisites: [],
     description: "Test",
     effects: [],
+    costsPerkPoint: true,
     ...overrides,
   };
 }

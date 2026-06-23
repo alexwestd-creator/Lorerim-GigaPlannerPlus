@@ -179,7 +179,7 @@ export function listBuildVariants(entry: SavedBuild): Array<{
   ];
 }
 
-function getActiveVariantIndex(entry: SavedBuild): number {
+export function getActiveVariantIndex(entry: SavedBuild): number {
   const normalized = normalizeSavedBuild(entry);
   if (normalized.activeMilestoneId === null) return 0;
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { decodeBuild, encodeBuild } from "@/engine/buildCodec";
+import { decodeBuild, decodeBuildPackage, encodeBuild, encodeSavedBuild } from "@/engine/buildCodec";
 import { createTestBuildState, getTestGameData } from "@/test/helpers";
+import { createMilestone, createSavedBuild } from "@/store/savedBuilds";
 
 describe("buildCodec", () => {
   const game = getTestGameData();
@@ -33,6 +34,34 @@ describe("buildCodec", () => {
     expect(decoded.description).toBe("Test build");
   });
 
+  it("round-trips character option choices", () => {
+    const state = createTestBuildState({
+      characterOptionChoices: {
+        "oghma-infinium": "health",
+        "alduin-bonus-trait": "claimed",
+      },
+    });
+
+    const decoded = decodeBuild(encodeBuild(state, game), game);
+
+    expect(decoded.characterOptionChoices).toEqual({
+      "oghma-infinium": "health",
+      "alduin-bonus-trait": "claimed",
+    });
+  });
+
+  it("round-trips skill training ranges", () => {
+    const state = createTestBuildState({
+      skillTrainingRanges: {
+        block: [2, 1, 0, 0],
+      },
+    });
+
+    const decoded = decodeBuild(encodeBuild(state, game), game);
+
+    expect(decoded.skillTrainingRanges.block).toEqual([2, 1, 0, 0]);
+  });
+
   it("rejects builds from a different modpack version", () => {
     const state = createTestBuildState();
     const code = encodeBuild(state, game);
@@ -43,5 +72,40 @@ describe("buildCodec", () => {
     };
 
     expect(() => decodeBuild(code, otherGame)).toThrow(/modpack/);
+  });
+
+  it("round-trips saved build metadata and variants", () => {
+    const defaultBuild = createTestBuildState({
+      raceId: "nord",
+      playerLevel: 10,
+      selectedPerkIds: ["block-improved-blocking"],
+    });
+    const milestoneBuild = createTestBuildState({
+      raceId: "nord",
+      playerLevel: 25,
+      selectedPerkIds: ["block-improved-blocking", "block-strong-grip"],
+    });
+    const entry = createSavedBuild(
+      "Two-Handed Tank",
+      defaultBuild,
+      [createMilestone("Level 25", milestoneBuild)],
+      "Baseline",
+    );
+    entry.activeMilestoneId = entry.milestones[0]!.id;
+
+    const decoded = decodeBuildPackage(encodeSavedBuild(entry, game), game);
+
+    expect(decoded.shared?.name).toBe("Two-Handed Tank");
+    expect(decoded.shared?.defaultVariantName).toBe("Baseline");
+    expect(decoded.shared?.milestones).toHaveLength(1);
+    expect(decoded.shared?.milestones[0]?.name).toBe("Level 25");
+    expect(decoded.shared?.milestones[0]?.build.playerLevel).toBe(25);
+    expect(decoded.shared?.milestones[0]?.build.selectedPerkIds).toEqual([
+      "block-improved-blocking",
+      "block-strong-grip",
+    ]);
+    expect(decoded.shared?.activeVariantIndex).toBe(1);
+    expect(decoded.build.playerLevel).toBe(10);
+    expect(decoded.build.selectedPerkIds).toEqual(["block-improved-blocking"]);
   });
 });

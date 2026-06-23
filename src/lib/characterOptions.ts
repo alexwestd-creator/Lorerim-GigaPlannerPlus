@@ -2,7 +2,6 @@ import type {
   AttributeStat,
   CharacterOption,
   CharacterOptionChoice,
-  Effect,
   GameData,
   Mechanics,
 } from "@/data/schemas";
@@ -66,21 +65,6 @@ export function normalizeCharacterOptionChoices(
   }
 
   return normalized;
-}
-
-export function collectCharacterOptionEffects(
-  game: GameData,
-  state: BuildState,
-): Effect[] {
-  const effects: Effect[] = [];
-
-  for (const option of game.characterOptions) {
-    const choice = getSelectedCharacterOptionChoice(option, state.characterOptionChoices);
-    if (choice.id === option.defaultChoice) continue;
-    if (choice.effects) effects.push(...choice.effects);
-  }
-
-  return effects;
 }
 
 export function getCharacterOptionPerkPointBonus(game: GameData, state: BuildState): number {

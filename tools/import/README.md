@@ -67,8 +67,8 @@ Perk trees are built from the final merged **`AVIF`** perk trees (what the game 
 | Default layout for newly added perks (GigaPlanner coords or prerequisite graph) | Perk `position` and `grid` per skill tree (matched by skill + perk name; multi-rank stacks share one cell) |
 | All traits from `Traits_AbilityList` (base FormList + FLM additions) | — |
 | Race names, descriptions, ability bonuses (`REQ_Ability_Race_*`), starting skills/attributes from RACE `DATA` | `race-effects.json`, race `speedBonus` / `attributeBonus` when not in `DATA` |
-| Birthsign names, bonuses, groups | Birthsign `effects` when already hand-tuned (non-empty) |
-| Deity names, shrine/follower/devotee/tenets text, racial starting deities, can-follow races, shrine locations (lorerim.com guide) | Deity `effects` |
+| Birthsign names, bonuses, groups | — (birthsign `effects` are re-parsed from bonus text each import) |
+| Deity names, shrine/follower/devotee/tenets text, racial starting deities, can-follow races, shrine locations (lorerim.com guide) | — (deity `effects` are re-parsed from shrine text each import) |
 | `manifest.json` → `version` (from installed Wabbajack list) | `manifest.json` limits, skills, and other fields |
 
 When `effects` is empty, the importer parses the `bonus` text with rule-based patterns in `lib/parse-bonus-effects.mjs` (percent modifiers, attribute flat bonuses, common weapon/resist phrases). Conditional or narrative-only bonuses may stay empty until rules are extended.
@@ -109,22 +109,29 @@ tools/import/
   probe-esp.mjs            # debug: inspect PERK/RACE records in one plugin
   generate-giga-planner-layout.mjs # regenerate lib/giga-planner-layout.json from legacy perk data
   lib/
-    lorerim-install.mjs    # MO2 discovery, load order, plugin paths
-    lorerim-version.mjs    # modpack version from Wabbajack + install fingerprints
+    append-missing-perks.mjs # supplemental perk nodes + metadata application
     avif-perk-tree.mjs     # AVIF perk tree parser (player-visible layout)
     avif-perk-membership.mjs # AVIF membership index + planner diff helpers
+    deity-eligibility.mjs  # Wintersun deity follow rules from plugins + guide
+    destiny-config.mjs     # Subclasses of Skyrim destiny tree layout parser
+    esp-reader.mjs         # Skyrim plugin record parser (single-pass batch scan)
     formid.mjs             # TES4 master list + plugin-local form ID → global identity
     giga-planner-layout.mjs # GigaPlanner-inspired perk positioning during import
     giga-planner-layout.json # static legacy layout coordinates
-    plugin-io.mjs          # shared plugin visit/read helpers + concurrent mapper
-    esp-reader.mjs         # Skyrim plugin record parser (single-pass batch scan)
+    import-progress.mjs    # CLI progress reporting helpers
     import-reset.mjs       # empty perk shells, hand-tuned overrides, layout preservation, stale file cleanup
+    lorerim-install.mjs    # MO2 discovery, load order, plugin paths
     lorerim-transform.mjs  # plugin records → planner JSON
-    destiny-config.mjs     # Subclasses of Skyrim destiny tree layout parser
-    skill-constants.mjs    # skill id ordering
-    transform-utils.mjs    # shared string/json helpers
+    lorerim-version.mjs    # modpack version from Wabbajack + install fingerprints
     parse-bonus-effects.mjs # bonus text → structured effects (rule-based)
     parse-trait-body.mjs    # trait spell text → description + bonus
+    perk-import-filter.mjs # which plugin perks belong in planner trees
+    perk-tree-metadata.mjs # skillReq / prerequisite enrichment from PERK records
+    plugin-io.mjs          # shared plugin visit/read helpers + concurrent mapper
+    prune-orphan-perks.mjs # remove unanchored perk nodes after metadata enrichment
+    skill-constants.mjs    # skill id ordering
+    trait-ability-list.mjs # Biggie Traits FormList spell collection
+    transform-utils.mjs    # shared string/json helpers
 ```
 
 ### Debug: inspect a single plugin
@@ -135,7 +142,12 @@ node tools/import/probe-esp.mjs "D:/path/to/SomeMod.esp" RACE
 node tools/import/compare-avif-perks.mjs "D:/path/to/Lorerim"
 node tools/import/list-missing-perks.mjs "D:/path/to/Lorerim"
 node tools/import/probe-plugin-sources.mjs "D:/path/to/Lorerim"
+node tools/import/probe-avif-sources.mjs "D:/path/to/Lorerim"
+node tools/import/probe-perk-names.mjs "D:/path/to/Lorerim"
+node tools/import/probe-race-data.mjs "D:/path/to/SomeMod.esp"
 ```
+
+**Note:** `npm run import:prune-perks` uses the legacy standalone prune script without AVIF membership context. Prefer `import:lorerim` for full rebuilds; standalone prune can remove perks the main importer would keep.
 
 ---
 

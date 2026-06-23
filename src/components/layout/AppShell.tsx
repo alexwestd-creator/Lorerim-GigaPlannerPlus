@@ -3,11 +3,7 @@ import { cn } from "@/lib/utils";
 import { useThemeConfig } from "@/theme/ThemeProvider";
 import { useBuildStore } from "@/store/buildStore";
 
-interface AppShellProps {
-  variant?: "default" | "minimal";
-}
-
-export function AppShell({ variant = "default" }: AppShellProps) {
+export function AppShell() {
   const { labels } = useThemeConfig();
   const version = useBuildStore((s) => s.gameData?.game.manifest.version);
 
@@ -36,11 +32,9 @@ export function AppShell({ variant = "default" }: AppShellProps) {
               <span className="block truncate font-[family-name:var(--font-heading)] text-base font-semibold tracking-wide text-[var(--color-accent)] sm:text-lg">
                 {labels.app.title}
               </span>
-              {variant === "default" && (
-                <span className="hidden text-xs text-[var(--color-muted)] sm:block">
-                  {labels.app.subtitle}
-                </span>
-              )}
+              <span className="hidden text-xs text-[var(--color-muted)] sm:block">
+                {labels.app.subtitle}
+              </span>
             </span>
           </Link>
 

@@ -1,4 +1,4 @@
-import type { GameData } from "@/data/schemas";
+import type { GameData, Mechanics } from "@/data/schemas";
 import type { BuildState } from "@/engine/buildEngine";
 
 export interface TrainingTierDefinition {
@@ -42,6 +42,27 @@ export function getSkillTrainingRanges(
 
 export function sumTrainingRanges(ranges: number[]): number {
   return ranges.reduce((total, count) => total + count, 0);
+}
+
+/** Skill points waived by training: one tier cost per trained level in that tier. */
+export function computeTrainingSkillPointCredit(
+  mechanics: Mechanics,
+  game: GameData,
+  ranges: number[],
+): number {
+  const tiers = getTrainingTierDefinitions(game);
+
+  return tiers.reduce((total, tier, index) => {
+    const count = ranges[index] ?? 0;
+    if (count <= 0) return total;
+
+    const tierCost =
+      mechanics.leveling.skillLevelCosts.find(
+        (entry) => tier.minLevel >= entry.minLevel && tier.minLevel <= entry.maxLevel,
+      )?.cost ?? mechanics.leveling.skillLevelCosts.at(-1)!.cost;
+
+    return total + count * tierCost;
+  }, 0);
 }
 
 export function distributeTrainingCountAcrossTiers(

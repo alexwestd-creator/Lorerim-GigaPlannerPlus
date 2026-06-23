@@ -182,11 +182,11 @@ Optional setup choices beyond race/stone/deity.
 
 Each option: `id`, `titleLabel`, `defaultChoice`, `choices[]`.
 
-- **`titleLabel` / choice `label`** — keys into `labels.json` → `panels.character-setup` (not literal UI text).
+- **`titleLabel` / choice `label`** — keys into `labels.json` → `panels.character-options` (not literal UI text).
 - **`mechanicsBinding`** — e.g. `"oghmaInfinium"` wires choices to `mechanics.oghmaInfinium` (requires paired `attributeStat` + `attributeBonusIndex` on choices).
 - **`grantsTraitSlot`** — when true, the “claimed” choice adds an extra trait slot (Alduin).
 
-Add matching label keys under `labels.panels.character-setup` when adding options.
+Add matching label keys under `labels.panels.character-options` when adding options.
 
 ### `perk-player-level-reqs.json`
 
@@ -322,7 +322,7 @@ All user-facing strings. Structure is validated by schema; missing keys break ty
 | `panels` | Nested map: `panels.<panelId>.<key>` |
 | `errors` | Load and validation error messages |
 
-Character option labels live under `panels.character-setup`. Keys referenced from `character-options.json` (`titleLabel`, choice `label`, etc.) must exist there.
+Character option labels live under `panels.character-options`. Keys referenced from `character-options.json` (`titleLabel`, choice `label`, etc.) must exist there.
 
 Use `{name}` / `{level}` style placeholders where the app substitutes values (see existing `milestones` and `level-bar` strings).
 
@@ -338,7 +338,7 @@ When adding or renaming content, verify:
 - [ ] `perk-player-level-reqs.json` keys match real perk ids
 - [ ] `race-effects.json` keys match `races.json` race ids
 - [ ] New `derivedStat` effects reference ids in `stats.json`
-- [ ] New character options have label keys in `labels.panels.character-setup`
+- [ ] New character options have label keys in `labels.panels.character-options`
 - [ ] `manifest.limits` align with UI expectations (major/minor/trait counts)
 
 ---

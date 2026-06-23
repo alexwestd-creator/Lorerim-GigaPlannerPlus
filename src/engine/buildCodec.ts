@@ -5,10 +5,19 @@ import { getSkillFloor, reconcileBuild } from "@/engine/buildEngine";
 import { migrateLegacySkillTrainingCounts } from "@/lib/skillTraining";
 import {
   createBuildCodecRegistry,
+  lookupCharacterOptionChoiceId,
+  lookupCharacterOptionChoiceIndex,
   lookupId,
   lookupIndex,
   type BuildCodecRegistry,
 } from "@/engine/buildCodecRegistry";
+import {
+  DEFAULT_VARIANT_NAME,
+  getActiveVariantIndex,
+  getDefaultVariantName,
+  normalizeSavedBuild,
+  type SavedBuild,
+} from "@/store/savedBuilds";
 
 const BUILD_CODEC_V1 = 1;
 const BUILD_CODEC_V2 = 2;
@@ -28,9 +37,7 @@ interface EncodedBuildV1 {
   desc: string;
 }
 
-interface CompactBuildV2 {
-  v: typeof BUILD_CODEC_V2;
-  mv: string;
+type CompactBuildPayload = {
   lv?: number;
   r?: number;
   s?: number;
@@ -42,13 +49,31 @@ interface CompactBuildV2 {
   p?: number[];
   l?: [number, number][];
   tr?: number[][];
+  co?: [number, number][];
   d?: string;
+};
+
+type CompactMilestone = [string, CompactBuildPayload];
+
+interface CompactBuildV2 extends CompactBuildPayload {
+  v: typeof BUILD_CODEC_V2;
+  mv: string;
+  bn?: string;
+  dv?: string;
+  ms?: CompactMilestone[];
+  av?: number;
 }
 
-export interface BuildCodeSizeComparison {
-  legacyChars: number;
-  compactChars: number;
-  savingsPercent: number;
+export interface SharedBuildPackage {
+  name: string;
+  defaultVariantName: string;
+  milestones: Array<{ name: string; build: BuildState }>;
+  activeVariantIndex: number;
+}
+
+export interface DecodedBuildPackage {
+  build: BuildState;
+  shared?: SharedBuildPackage;
 }
 
 function toBase64Url(bytes: Uint8Array): string {
@@ -74,37 +99,13 @@ function indexList(
   return ids.map((id) => lookupIndex(map, id, label)!);
 }
 
-function encodeBuildV1(state: BuildState, modpackVersion: string): string {
-  const payload: EncodedBuildV1 = {
-    v: BUILD_CODEC_V1,
-    mv: modpackVersion,
-    race: state.raceId,
-    stone: state.birthsignId,
-    blessing: state.deityId,
-    traits: state.traitIds,
-    major: state.majorSkillIds,
-    minor: state.minorSkillIds,
-    attrs: [
-      state.attributeBonus.health,
-      state.attributeBonus.magicka,
-      state.attributeBonus.stamina,
-    ],
-    perks: state.selectedPerkIds,
-    desc: state.description,
-  };
-
-  const bytes = new TextEncoder().encode(JSON.stringify(payload));
-  return toBase64Url(bytes);
-}
-
-function encodeBuildV2(state: BuildState, registry: BuildCodecRegistry): string {
+function compactPayloadFromBuild(
+  state: BuildState,
+  registry: BuildCodecRegistry,
+): CompactBuildPayload {
   const { health, magicka, stamina } = state.attributeBonus;
   const raceId = state.raceId ?? "none";
-
-  const payload: CompactBuildV2 = {
-    v: BUILD_CODEC_V2,
-    mv: registry.modpackVersion,
-  };
+  const payload: CompactBuildPayload = {};
 
   if (state.playerLevel > registry.game.mechanics.leveling.baseLevel) {
     payload.lv = state.playerLevel;
@@ -180,58 +181,34 @@ function encodeBuildV2(state: BuildState, registry: BuildCodecRegistry): string 
     payload.tr = trainingEntries;
   }
 
+  const characterOptionEntries: [number, number][] = [];
+  for (const option of registry.game.characterOptions) {
+    const selectedId = state.characterOptionChoices[option.id] ?? option.defaultChoice;
+    if (selectedId === option.defaultChoice) continue;
+
+    const optionIndex = lookupIndex(registry.characterOptionIndex, option.id, "character option");
+    if (optionIndex === undefined) continue;
+
+    characterOptionEntries.push([
+      optionIndex,
+      lookupCharacterOptionChoiceIndex(registry, option.id, selectedId),
+    ]);
+  }
+  if (characterOptionEntries.length > 0) {
+    payload.co = characterOptionEntries;
+  }
+
   if (state.description.trim()) {
     payload.d = state.description;
   }
 
-  const compressed = gzipSync(new TextEncoder().encode(JSON.stringify(payload)));
-  return `${V2_PREFIX}${toBase64Url(compressed)}`;
+  return payload;
 }
 
-function decodeBuildV1(code: string): BuildState {
-  const bytes = fromBase64Url(code);
-  const json = new TextDecoder().decode(bytes);
-  const payload = JSON.parse(json) as EncodedBuildV1;
-
-  if (payload.v !== BUILD_CODEC_V1) {
-    throw new Error(`Unsupported build codec version: ${payload.v}`);
-  }
-
-  return migrateBuildState(payloadToBuildState({
-    raceId: payload.race === null ? "none" : (payload.race ?? "none"),
-    birthsignId: payload.stone,
-    deityId: payload.blessing,
-    traitIds: payload.traits ?? [],
-    majorSkillIds: payload.major ?? [],
-    minorSkillIds: payload.minor ?? [],
-    attributeBonus: {
-      health: payload.attrs?.[0] ?? 0,
-      magicka: payload.attrs?.[1] ?? 0,
-      stamina: payload.attrs?.[2] ?? 0,
-    },
-    selectedPerkIds: payload.perks ?? [],
-    skillLevels: {},
-    skillTrainingRanges: {},
-    playerLevel: 1,
-    description: payload.desc ?? "",
-  }));
-}
-
-function decodeBuildV2(code: string, registry: BuildCodecRegistry): BuildState {
-  const bytes = fromBase64Url(code);
-  const json = new TextDecoder().decode(gunzipSync(bytes));
-  const payload = JSON.parse(json) as CompactBuildV2;
-
-  if (payload.v !== BUILD_CODEC_V2) {
-    throw new Error(`Unsupported build codec version: ${payload.v}`);
-  }
-
-  if (payload.mv !== registry.modpackVersion) {
-    throw new Error(
-      `Build is for modpack ${payload.mv}, but this planner is on ${registry.modpackVersion}`,
-    );
-  }
-
+function buildStateFromCompactPayload(
+  payload: CompactBuildPayload,
+  registry: BuildCodecRegistry,
+): BuildState {
   const attrs = payload.a ?? [0, 0, 0];
   const skillLevels = Object.fromEntries(
     (payload.l ?? [])
@@ -269,7 +246,18 @@ function decodeBuildV2(code: string, registry: BuildCodecRegistry): BuildState {
     );
   }
 
-  return migrateBuildState(payloadToBuildState({
+  const characterOptionChoices: Record<string, string> = {};
+  for (const [optionIndex, choiceIndex] of payload.co ?? []) {
+    const optionId = lookupId(registry.characterOptions, optionIndex, "character option");
+    if (!optionId) continue;
+    characterOptionChoices[optionId] = lookupCharacterOptionChoiceId(
+      registry,
+      optionIndex,
+      choiceIndex,
+    );
+  }
+
+  return payloadToBuildState({
     raceId: lookupId(registry.races, payload.r, "race") ?? "none",
     birthsignId: lookupId(registry.birthsigns, payload.s, "birthsign"),
     deityId: lookupId(registry.deities, payload.b, "deity"),
@@ -284,9 +272,125 @@ function decodeBuildV2(code: string, registry: BuildCodecRegistry): BuildState {
     selectedPerkIds: (payload.p ?? []).map((index) => lookupId(registry.perks, index, "perk")!),
     skillLevels,
     skillTrainingRanges,
+    characterOptionChoices,
     playerLevel: payload.lv ?? registry.game.mechanics.leveling.baseLevel,
     description: payload.d ?? "",
-  }, registry.game));
+  }, registry.game);
+}
+
+function encodeCompactBuildV2(payload: CompactBuildV2): string {
+  const compressed = gzipSync(new TextEncoder().encode(JSON.stringify(payload)));
+  return `${V2_PREFIX}${toBase64Url(compressed)}`;
+}
+
+function encodeBuildV2(state: BuildState, registry: BuildCodecRegistry): string {
+  return encodeCompactBuildV2({
+    v: BUILD_CODEC_V2,
+    mv: registry.modpackVersion,
+    ...compactPayloadFromBuild(state, registry),
+  });
+}
+
+function encodeSavedBuildV2(entry: SavedBuild, registry: BuildCodecRegistry): string {
+  const normalized = normalizeSavedBuild(entry);
+  const payload: CompactBuildV2 = {
+    v: BUILD_CODEC_V2,
+    mv: registry.modpackVersion,
+    ...compactPayloadFromBuild(normalized.build, registry),
+  };
+
+  if (normalized.name.trim()) {
+    payload.bn = normalized.name;
+  }
+
+  const defaultVariantName = getDefaultVariantName(normalized);
+  if (defaultVariantName !== DEFAULT_VARIANT_NAME) {
+    payload.dv = defaultVariantName;
+  }
+
+  if (normalized.milestones.length > 0) {
+    payload.ms = normalized.milestones.map((milestone) => [
+      milestone.name,
+      compactPayloadFromBuild(milestone.build, registry),
+    ]);
+  }
+
+  const activeVariantIndex = getActiveVariantIndex(normalized);
+  if (activeVariantIndex !== 0) {
+    payload.av = activeVariantIndex;
+  }
+
+  return encodeCompactBuildV2(payload);
+}
+
+function decodeBuildV1(code: string): BuildState {
+  const bytes = fromBase64Url(code);
+  const json = new TextDecoder().decode(bytes);
+  const payload = JSON.parse(json) as EncodedBuildV1;
+
+  if (payload.v !== BUILD_CODEC_V1) {
+    throw new Error(`Unsupported build codec version: ${payload.v}`);
+  }
+
+  return migrateBuildState(payloadToBuildState({
+    raceId: payload.race === null ? "none" : (payload.race ?? "none"),
+    birthsignId: payload.stone,
+    deityId: payload.blessing,
+    traitIds: payload.traits ?? [],
+    majorSkillIds: payload.major ?? [],
+    minorSkillIds: payload.minor ?? [],
+    attributeBonus: {
+      health: payload.attrs?.[0] ?? 0,
+      magicka: payload.attrs?.[1] ?? 0,
+      stamina: payload.attrs?.[2] ?? 0,
+    },
+    selectedPerkIds: payload.perks ?? [],
+    skillLevels: {},
+    skillTrainingRanges: {},
+    playerLevel: 1,
+    description: payload.desc ?? "",
+  }));
+}
+
+function sharedPackageFromPayload(payload: CompactBuildV2, registry: BuildCodecRegistry): SharedBuildPackage | undefined {
+  const hasMetadata =
+    payload.bn !== undefined ||
+    payload.dv !== undefined ||
+    (payload.ms?.length ?? 0) > 0 ||
+    payload.av !== undefined;
+
+  if (!hasMetadata) return undefined;
+
+  return {
+    name: payload.bn ?? "",
+    defaultVariantName: payload.dv ?? DEFAULT_VARIANT_NAME,
+    milestones: (payload.ms ?? []).map(([name, compact]) => ({
+      name,
+      build: buildStateFromCompactPayload(compact, registry),
+    })),
+    activeVariantIndex: payload.av ?? 0,
+  };
+}
+
+function decodeBuildV2(code: string, registry: BuildCodecRegistry): DecodedBuildPackage {
+  const bytes = fromBase64Url(code);
+  const json = new TextDecoder().decode(gunzipSync(bytes));
+  const payload = JSON.parse(json) as CompactBuildV2;
+
+  if (payload.v !== BUILD_CODEC_V2) {
+    throw new Error(`Unsupported build codec version: ${payload.v}`);
+  }
+
+  if (payload.mv !== registry.modpackVersion) {
+    throw new Error(
+      `Build is for modpack ${payload.mv}, but this planner is on ${registry.modpackVersion}`,
+    );
+  }
+
+  const shared = sharedPackageFromPayload(payload, registry);
+  const build = buildStateFromCompactPayload(payload, registry);
+
+  return { build, shared };
 }
 
 function payloadToBuildState(partial: {
@@ -297,6 +401,7 @@ function payloadToBuildState(partial: {
   majorSkillIds: string[];
   minorSkillIds: string[];
   attributeBonus: BuildState["attributeBonus"];
+  characterOptionChoices?: BuildState["characterOptionChoices"];
   selectedPerkIds: string[];
   skillLevels: BuildState["skillLevels"];
   skillTrainingRanges?: BuildState["skillTrainingRanges"];
@@ -311,7 +416,7 @@ function payloadToBuildState(partial: {
     majorSkillIds: partial.majorSkillIds,
     minorSkillIds: partial.minorSkillIds,
     attributeBonus: partial.attributeBonus,
-    characterOptionChoices: {},
+    characterOptionChoices: partial.characterOptionChoices ?? {},
     selectedPerkIds: partial.selectedPerkIds,
     skillLevels: partial.skillLevels,
     skillTrainingRanges: partial.skillTrainingRanges ?? {},
@@ -327,25 +432,21 @@ export function encodeBuild(state: BuildState, game: GameData): string {
   return encodeBuildV2(state, registry);
 }
 
-export function encodeLegacyBuild(state: BuildState, modpackVersion: string): string {
-  return encodeBuildV1(state, modpackVersion);
+export function encodeSavedBuild(entry: SavedBuild, game: GameData): string {
+  const registry = createBuildCodecRegistry(game);
+  return encodeSavedBuildV2(normalizeSavedBuild(entry), registry);
 }
 
-export function compareBuildCodeSizes(state: BuildState, game: GameData): BuildCodeSizeComparison {
-  const legacyChars = encodeBuildV1(state, game.manifest.version).length;
-  const compactChars = encodeBuild(state, game).length;
-  const savingsPercent =
-    legacyChars === 0 ? 0 : Math.round(((legacyChars - compactChars) / legacyChars) * 100);
-
-  return { legacyChars, compactChars, savingsPercent };
-}
-
-export function decodeBuild(code: string, game: GameData): BuildState {
+export function decodeBuildPackage(code: string, game: GameData): DecodedBuildPackage {
   const trimmed = code.trim();
   if (trimmed.startsWith(V2_PREFIX)) {
     return decodeBuildV2(trimmed.slice(V2_PREFIX.length), createBuildCodecRegistry(game));
   }
-  return decodeBuildV1(trimmed);
+  return { build: decodeBuildV1(trimmed) };
+}
+
+export function decodeBuild(code: string, game: GameData): BuildState {
+  return decodeBuildPackage(code, game).build;
 }
 
 export function getBuildFromUrl(): string | null {
@@ -359,8 +460,3 @@ export function setBuildInUrl(code: string): void {
   window.history.replaceState({}, "", url.toString());
 }
 
-export function clearBuildFromUrl(): void {
-  const url = new URL(window.location.href);
-  url.searchParams.delete("build");
-  window.history.replaceState({}, "", url.toString());
-}

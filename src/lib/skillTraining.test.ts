@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  computeTrainingSkillPointCredit,
   distributeTrainingCountAcrossTiers,
   formatTrainingTierRange,
   getTrainingTierDefinitions,
@@ -38,5 +39,11 @@ describe("skillTraining", () => {
     expect(sumTrainingRanges([10, 5, 0, 0])).toBe(15);
     expect(tiers.length).toBe(4);
     expect(state.skillTrainingRanges.block).toEqual([10, 5]);
+  });
+
+  it("waives one tier cost per trained level", () => {
+    expect(computeTrainingSkillPointCredit(game.mechanics, game, [3, 0, 0, 0])).toBe(3);
+    expect(computeTrainingSkillPointCredit(game.mechanics, game, [0, 2, 0, 0])).toBe(4);
+    expect(computeTrainingSkillPointCredit(game.mechanics, game, [5, 1, 0, 0])).toBe(7);
   });
 });

@@ -18,6 +18,7 @@ function makePerk(id: string, skillReq: number): Perk {
     prerequisites: [],
     description: "",
     effects: [],
+    costsPerkPoint: true,
   };
 }
 

@@ -14,6 +14,7 @@ import {
 import { collectConditionalBonuses, type ConditionalBonusEntry } from "@/lib/conditionalBonuses";
 import {
   clampTrainingRangeCount,
+  computeTrainingSkillPointCredit,
   getMaxTrainingOnSkill,
   getSkillLevelRequiredForTrainingRanges,
   getSkillTrainingRanges,
@@ -127,7 +128,7 @@ export interface DerivedStatResult {
   isPercent: boolean;
 }
 
-export interface AppliedBonusEntry extends TrackedStatEntry {}
+export type AppliedBonusEntry = TrackedStatEntry;
 
 export interface ComputedBuild {
   attributes: Attributes;
@@ -450,19 +451,17 @@ function computePaidSkillPoints(
   const pointBase = getSkillLevelBaseline(game, state, skillId, skillPointBaseline);
   const floor = getSkillFloor(game, state, skillId);
   const effectiveLevel = Math.max(floor, Math.min(getMaxSkillLevel(game), level));
-  const totalFromBase = computeSkillPointsToReach(game.mechanics, pointBase, effectiveLevel);
-  const freeThroughLevel = Math.max(pointBase, getSkillLevelFromTraining(game, state, skillId));
-
-  if (!skillPointFreeThroughFloor) {
-    return Math.max(0, computeSkillPointsToReach(game.mechanics, freeThroughLevel, effectiveLevel));
-  }
-
-  const freeSetup = computeSkillPointsToReach(
+  const chargeFrom = skillPointFreeThroughFloor
+    ? Math.max(pointBase, floor)
+    : pointBase;
+  const gross = computeSkillPointsToReach(game.mechanics, chargeFrom, effectiveLevel);
+  const trainingCredit = computeTrainingSkillPointCredit(
     game.mechanics,
-    pointBase,
-    freeThroughLevel,
+    game,
+    getSkillTrainingRanges(game, state, skillId),
   );
-  return Math.max(0, totalFromBase - freeSetup);
+
+  return Math.max(0, gross - trainingCredit);
 }
 
 export function computeTotalSkillPointsForLevels(
@@ -609,20 +608,6 @@ export function getDestinyPerksOverPointBudget(
   });
 }
 
-export function filterDestinyPerksByDestinyPointBudget(
-  game: GameData,
-  state: BuildState,
-  selectedPerkIds: string[],
-): string[] {
-  const earned = getEarnedDestinyPerkPoints(game, state);
-  const costingIds = getSelectedDestinyCostingPerkIds(game, selectedPerkIds);
-
-  if (costingIds.length <= earned) return selectedPerkIds;
-
-  const dropSet = new Set(costingIds.slice(earned));
-  return selectedPerkIds.filter((perkId) => !dropSet.has(perkId));
-}
-
 export function clampPlayerLevel(game: GameData, level: number): number {
   const { baseLevel, maxPlayerLevel } = game.mechanics.leveling;
   return Math.min(maxPlayerLevel, Math.max(baseLevel, Math.floor(level)));
@@ -753,7 +738,7 @@ export function applySkillLevelChange(
   const trainingFloor = getSkillLevelFromTraining(game, build, skillId);
   const clampedLevel = Math.max(
     trainingFloor,
-    clampSkillLevel(game, build, skillId, level, options),
+    clampSkillLevel(game, build, skillId, level),
   );
 
   const next = reconcileBuild(
@@ -875,15 +860,17 @@ function migrateSkillTrainingStorage(game: GameData, build: BuildState): BuildSt
     build.skillTrainingRanges && Object.keys(build.skillTrainingRanges).length > 0;
 
   if (hasRanges || !legacyTraining || Object.keys(legacyTraining).length === 0) {
-    const { skillTraining: _legacy, ...rest } = build as BuildState & {
+    const { skillTraining, ...rest } = build as BuildState & {
       skillTraining?: Record<string, number>;
     };
+    void skillTraining;
     return rest;
   }
 
-  const { skillTraining: _legacy, ...rest } = build as BuildState & {
+  const { skillTraining, ...rest } = build as BuildState & {
     skillTraining?: Record<string, number>;
   };
+  void skillTraining;
 
   return {
     ...rest,
@@ -916,7 +903,6 @@ export function clampSkillLevel(
   state: BuildState,
   skillId: string,
   level: number,
-  _options?: BuildReconcileOptions,
 ): number {
   const floor = getSkillFloor(game, state, skillId);
   return Math.min(getMaxSkillLevel(game), Math.max(floor, level));
@@ -925,7 +911,6 @@ export function clampSkillLevel(
 export function computeSkillLevels(
   game: GameData,
   state: BuildState,
-  options?: BuildReconcileOptions,
 ): Record<string, number> {
   const levels: Record<string, number> = {};
 
@@ -933,7 +918,7 @@ export function computeSkillLevels(
     if (!isAllocatableSkill(game, skillId)) continue;
     const floor = getSkillFloor(game, state, skillId);
     const stored = state.skillLevels[skillId] ?? floor;
-    levels[skillId] = clampSkillLevel(game, state, skillId, stored, options);
+    levels[skillId] = clampSkillLevel(game, state, skillId, stored);
   }
 
   return levels;
@@ -943,29 +928,14 @@ export function getSkillLevelForPerkChecks(
   game: GameData,
   state: BuildState,
   skillId: string,
-  _options?: BuildReconcileOptions,
 ): number {
   return getStoredSkillLevel(game, state, skillId);
-}
-
-export function filterPerksByPlayerLevel(
-  game: GameData,
-  state: BuildState,
-  selectedPerkIds: string[],
-): string[] {
-  return selectedPerkIds.filter((perkId) => {
-    const perk = getPerkById(game, perkId);
-    if (!perk) return false;
-    if (perk.playerLevelReq == null) return true;
-    return state.playerLevel >= perk.playerLevelReq;
-  });
 }
 
 /** Selected perks whose skill requirement exceeds the current skill level. */
 export function getSelectedPerksBelowSkillRequirement(
   game: GameData,
   state: BuildState,
-  options?: BuildReconcileOptions,
 ): SkillReqConflictPerk[] {
   return state.selectedPerkIds.flatMap((perkId) => {
     const perk = getPerkById(game, perkId);
@@ -974,7 +944,7 @@ export function getSelectedPerksBelowSkillRequirement(
     const skillId = getPerkSkillId(game, perkId);
     if (!skillId || skillId === DESTINY_SKILL_ID) return [];
 
-    const skillLevel = getSkillLevelForPerkChecks(game, state, skillId, options);
+    const skillLevel = getSkillLevelForPerkChecks(game, state, skillId);
     if (skillLevel >= perk.skillReq) return [];
 
     return [{ id: perk.id, name: perk.name, skillReq: perk.skillReq, skillId }];
@@ -1166,7 +1136,7 @@ export function normalizeBuildSkillLevels(
     if (!isAllocatableSkill(game, skillId)) continue;
     const floor = getSkillFloor(game, build, skillId);
     const stored = skillLevels[skillId] ?? floor;
-    skillLevels[skillId] = clampSkillLevel(game, build, skillId, stored, options);
+    skillLevels[skillId] = clampSkillLevel(game, build, skillId, stored);
   }
 
   const nextBuild = normalizeSkillTraining(game, { ...build, skillLevels }, options);

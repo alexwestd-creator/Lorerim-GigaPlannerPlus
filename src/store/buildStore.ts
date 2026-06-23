@@ -48,6 +48,7 @@ import {
   type SavedBuild,
   LIBRARY_STORAGE_KEY,
 } from "@/store/savedBuilds";
+import type { DecodedBuildPackage } from "@/engine/buildCodec";
 
 function recompute(data: AppData, build: BuildState): ComputedBuild {
   return computeBuild(data.game, build);
@@ -59,6 +60,36 @@ function syncActiveEntryBuild(
   build: BuildState,
 ): SavedBuild[] {
   return updateSavedBuildInList(savedBuilds, activeBuildId, build);
+}
+
+function getActiveBuildFromPackage(decoded: DecodedBuildPackage): BuildState {
+  if (!decoded.shared || decoded.shared.activeVariantIndex === 0) {
+    return decoded.build;
+  }
+
+  return decoded.shared.milestones[decoded.shared.activeVariantIndex - 1]?.build ?? decoded.build;
+}
+
+function createSavedBuildFromPackage(
+  game: AppData["game"],
+  decoded: DecodedBuildPackage,
+  name: string,
+): SavedBuild {
+  const { defaultVariantName, milestones, activeVariantIndex } = decoded.shared!;
+  const milestoneEntries = milestones.map((milestone) =>
+    createMilestone(
+      milestone.name,
+      reconcileBuild(game, migrateBuildState(milestone.build)),
+    ),
+  );
+  const defaultBuild = reconcileBuild(game, migrateBuildState(decoded.build));
+  const activeMilestoneId =
+    activeVariantIndex > 0 ? milestoneEntries[activeVariantIndex - 1]?.id ?? null : null;
+
+  return normalizeSavedBuild({
+    ...createSavedBuild(name, defaultBuild, milestoneEntries, defaultVariantName),
+    activeMilestoneId,
+  });
 }
 
 interface BuildStore {
@@ -89,6 +120,8 @@ interface BuildStore {
   resetAllPerks: () => void;
   setDescription: (description: string) => void;
   loadBuild: (build: BuildState) => void;
+  loadSharedBuild: (decoded: DecodedBuildPackage) => void;
+  importSharedBuild: (decoded: DecodedBuildPackage) => void;
   resetBuild: () => void;
   createSavedBuildSlot: (name?: string) => void;
   deleteSavedBuildSlot: (id: string) => void;
@@ -475,6 +508,68 @@ export const useBuildStore = create<BuildStore>()(
           const { gameData } = get();
           if (!gameData) return;
           commitMainBuild(set, get, reconcileBuild(gameData.game, migrateBuildState(build)));
+        },
+
+        loadSharedBuild: (decoded) => {
+          const { gameData, savedBuilds, activeBuildId } = get();
+          if (!gameData) return;
+
+          if (!decoded.shared) {
+            get().loadBuild(decoded.build);
+            return;
+          }
+
+          const activeBuild = getActiveBuildFromPackage(decoded);
+          const entryName = decoded.shared.name.trim();
+          const nextBuilds = savedBuilds.map((entry) => {
+            if (entry.id !== activeBuildId) return normalizeSavedBuild(entry);
+            return {
+              ...createSavedBuildFromPackage(
+                gameData.game,
+                decoded,
+                entryName || entry.name,
+              ),
+              id: entry.id,
+              updatedAt: Date.now(),
+            };
+          });
+
+          set({
+            savedBuilds: nextBuilds,
+            build: reconcileBuild(gameData.game, migrateBuildState(activeBuild)),
+            computed: recompute(
+              gameData,
+              reconcileBuild(gameData.game, migrateBuildState(activeBuild)),
+            ),
+          });
+        },
+
+        importSharedBuild: (decoded) => {
+          const { gameData, savedBuilds, build, activeBuildId } = get();
+          if (!gameData) return;
+
+          if (!decoded.shared) {
+            get().importBuildAsSlot(decoded.build);
+            return;
+          }
+
+          const syncedBuilds = updateSavedBuildInList(savedBuilds, activeBuildId, build);
+          const activeBuild = getActiveBuildFromPackage(decoded);
+          const newEntry = createSavedBuildFromPackage(
+            gameData.game,
+            decoded,
+            decoded.shared.name.trim() || nextBuildName(syncedBuilds),
+          );
+
+          set({
+            savedBuilds: [...syncedBuilds, newEntry],
+            activeBuildId: newEntry.id,
+            build: reconcileBuild(gameData.game, migrateBuildState(activeBuild)),
+            computed: recompute(
+              gameData,
+              reconcileBuild(gameData.game, migrateBuildState(activeBuild)),
+            ),
+          });
         },
 
         resetBuild: () => {
