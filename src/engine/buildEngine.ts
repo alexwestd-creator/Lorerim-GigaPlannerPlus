@@ -1606,6 +1606,16 @@ export function tryTakePerk(game: GameData, build: BuildState, perkId: string): 
   });
 }
 
+function getSelectedIdsAfterRemoval(
+  selected: ReadonlySet<string>,
+  rootId: string,
+  removeIds: ReadonlySet<string>,
+): string[] {
+  return [...selected].filter(
+    (candidateId) => candidateId !== rootId && !removeIds.has(candidateId),
+  );
+}
+
 function addSelectedDependentsInStack(
   game: GameData,
   selected: ReadonlySet<string>,
@@ -1649,11 +1659,16 @@ function collectSelectedDependents(
       const perk = getPerkById(game, id);
       if (!perk) continue;
 
-      const dependsOnCurrent =
+      const referencesCurrent =
         perk.prerequisites.includes(current) ||
         (perk.prerequisitesAny?.includes(current) ?? false);
+      if (!referencesCurrent) continue;
 
-      if (dependsOnCurrent) {
+      const remainingSelected = getSelectedIdsAfterRemoval(selected, rootId, dependents);
+      const preview: BuildState = { ...createInitialBuildState(), selectedPerkIds: remainingSelected };
+
+      // Keep dependents that still satisfy prerequisites via another OR branch.
+      if (!arePrerequisitesMet(game, preview, perk)) {
         addSelectedDependentsInStack(game, selected, dependents, queue, id);
       }
     }

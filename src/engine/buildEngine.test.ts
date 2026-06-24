@@ -14,6 +14,7 @@ import {
   canSelectPerk,
   arePrerequisitesMet,
   getPerkById,
+  removePerk,
 } from "@/engine/buildEngine";
 import { createTestBuildState, getTestGameData } from "@/test/helpers";
 
@@ -144,5 +145,76 @@ describe("buildEngine perk selection", () => {
     expect(canSelectPerk(game, heavyPath, "smithing-orcish-smithing")).toBe(true);
     expect(canSelectPerk(game, lightPath, "smithing-orcish-smithing")).toBe(true);
     expect(canSelectPerk(game, neitherBranch, "smithing-orcish-smithing")).toBe(false);
+  });
+
+  it("keeps smithing OR branch when removing elven with orcish path intact", () => {
+    const smithingTree = game.perkTrees.smithing;
+    expect(smithingTree).toBeDefined();
+
+    const allSmithingIds = smithingTree!.perks.map((perk) => perk.id);
+    const build = createTestBuildState({
+      playerLevel: 50,
+      selectedPerkIds: allSmithingIds,
+      skillLevels: { smithing: 90 },
+    });
+
+    const next = removePerk(game, build, "smithing-elven-smithing");
+
+    expect(next.selectedPerkIds).toContain("smithing-glass-smithing");
+    expect(next.selectedPerkIds).toContain("smithing-ebony-smithing");
+    expect(next.selectedPerkIds).toContain("smithing-daedric-smithing");
+    expect(next.selectedPerkIds).toContain("smithing-draconic-blacksmithing");
+    expect(next.selectedPerkIds).not.toContain("smithing-elven-smithing");
+  });
+
+  it("keeps OR dependents when another prerequisite path remains after removal", () => {
+    const build = createTestBuildState({
+      playerLevel: 30,
+      selectedPerkIds: [
+        "smithing-elven-smithing",
+        "smithing-glass-smithing",
+        "smithing-ebony-smithing",
+        "smithing-daedric-smithing",
+      ],
+      skillLevels: { smithing: 90 },
+    });
+
+    const next = removePerk(game, build, "smithing-ebony-smithing");
+
+    expect(next.selectedPerkIds).toEqual([
+      "smithing-elven-smithing",
+      "smithing-glass-smithing",
+      "smithing-daedric-smithing",
+    ]);
+  });
+
+  it("removes OR dependents when no prerequisite path remains after removal", () => {
+    const build = createTestBuildState({
+      playerLevel: 30,
+      selectedPerkIds: [
+        "smithing-ebony-smithing",
+        "smithing-daedric-smithing",
+      ],
+      skillLevels: { smithing: 90 },
+    });
+
+    const next = removePerk(game, build, "smithing-ebony-smithing");
+
+    expect(next.selectedPerkIds).toEqual([]);
+  });
+
+  it("still cascades removal through AND prerequisites", () => {
+    const build = createTestBuildState({
+      playerLevel: 20,
+      selectedPerkIds: [
+        "block-improved-blocking",
+        "block-strong-grip",
+      ],
+      skillLevels: { block: 25 },
+    });
+
+    const next = removePerk(game, build, "block-improved-blocking");
+
+    expect(next.selectedPerkIds).toEqual([]);
   });
 });
