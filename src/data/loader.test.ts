@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import perkPlayerLevelReqsJson from "../../data/game/perk-player-level-reqs.json";
 import raceEffectsJson from "../../data/game/race-effects.json";
 import racesJson from "../../data/game/races.json";
 import { loadAppData } from "@/data/loader";
@@ -20,8 +21,24 @@ describe("loadAppData", () => {
     const data = loadAppData();
     const speechTree = data.game.perkTrees.speech;
     const shoutFocus = speechTree?.perks.find((perk) => perk.id === "speech-shout-focus");
+    const shoutFocusR2 = speechTree?.perks.find((perk) => perk.id === "speech-shout-focus-r2");
+    const shoutFocusR3 = speechTree?.perks.find((perk) => perk.id === "speech-shout-focus-r3");
 
     expect(shoutFocus?.playerLevelReq).toBe(10);
+    expect(shoutFocusR2?.playerLevelReq).toBe(20);
+    expect(shoutFocusR3?.playerLevelReq).toBe(30);
+  });
+
+  it("maps every perk-player-level-reqs key to a real perk id", () => {
+    const data = loadAppData();
+    const perkIds = new Set(
+      Object.values(data.game.perkTrees).flatMap((tree) => tree.perks.map((perk) => perk.id)),
+    );
+    const playerLevelReqs = perkPlayerLevelReqsJson as Record<string, number>;
+
+    for (const perkId of Object.keys(playerLevelReqs)) {
+      expect(perkIds.has(perkId), `unknown perk-player-level-reqs key: ${perkId}`).toBe(true);
+    }
   });
 
   it("loads smithing book perks with OR prerequisites", () => {

@@ -9,7 +9,7 @@
       "panels": ["skill-trees"]
     },
     {
-      "width": "340px",
+      "width": "370px",
       "panels": ["skill-trees-sidebar"]
     }
   ]

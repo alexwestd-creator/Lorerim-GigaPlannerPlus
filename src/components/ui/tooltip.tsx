@@ -67,11 +67,12 @@ export function CursorTooltip({
   style?: CSSProperties;
 }) {
   const [open, setOpen] = useState(false);
+  const [anchor, setAnchor] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  const updatePosition = (event: MouseEvent) => {
-    setPosition({
+  const updateAnchor = (event: MouseEvent) => {
+    setAnchor({
       x: event.clientX + TOOLTIP_OFFSET,
       y: event.clientY + TOOLTIP_OFFSET,
     });
@@ -79,12 +80,23 @@ export function CursorTooltip({
 
   useLayoutEffect(() => {
     if (!open || !tooltipRef.current) return;
-    const { width, height } = tooltipRef.current.getBoundingClientRect();
-    const clamped = clampTooltipToViewport(position.x, position.y, width, height);
-    if (clamped.x !== position.x || clamped.y !== position.y) {
-      setPosition(clamped);
-    }
-  }, [open, position]);
+
+    const el = tooltipRef.current;
+    const updateDisplay = () => {
+      const { width, height } = el.getBoundingClientRect();
+      const clamped = clampTooltipToViewport(anchor.x, anchor.y, width, height);
+      setPosition((prev) => {
+        if (prev.x === clamped.x && prev.y === clamped.y) return prev;
+        return clamped;
+      });
+    };
+
+    updateDisplay();
+
+    const observer = new ResizeObserver(updateDisplay);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [open, anchor]);
 
   return (
     <>
@@ -92,11 +104,11 @@ export function CursorTooltip({
         className={className}
         style={style}
         onMouseEnter={(event) => {
-          updatePosition(event);
+          updateAnchor(event);
           setOpen(true);
         }}
         onMouseLeave={() => setOpen(false)}
-        onMouseMove={updatePosition}
+        onMouseMove={updateAnchor}
       >
         {children}
       </div>

@@ -42,7 +42,8 @@ interface UiStore {
   openVariantsManager: () => void;
   closeVariantsManager: () => void;
   setMiddleView: (view: MiddleWorkspaceView) => void;
-  setActiveSkillTreeId: (skillId: string) => void;
+  setActiveSkillTreeId: (skillId: string | null) => void;
+  openSkillTree: (skillId: string) => void;
   setSkillWorkspaceMode: (mode: SkillWorkspaceMode) => void;
   setShowPerkSkillRequirements: (show: boolean) => void;
 }
@@ -113,6 +114,20 @@ export const useUiStore = create<UiStore>((set, get) => ({
         : { skillWorkspaceMode: "perks" }),
     }),
   setActiveSkillTreeId: (skillId) => set({ activeSkillTreeId: skillId }),
+  openSkillTree: (skillId) => {
+    const state = get();
+    if (isSkillTreeOpenInMiddlePane(state) && state.activeSkillTreeId === skillId) {
+      set({ middleView: "character-info", activeSkillTreeId: null, skillWorkspaceMode: "perks" });
+      return;
+    }
+    set({
+      middleView: "skill-trees",
+      activeSkillTreeId: skillId,
+      setupPicker: null,
+      characterOptionsOpen: false,
+      variantsManagerOpen: false,
+    });
+  },
   setSkillWorkspaceMode: (mode) => set({ skillWorkspaceMode: mode }),
   setShowPerkSkillRequirements: (show) => set({ showPerkSkillRequirements: show }),
 }));

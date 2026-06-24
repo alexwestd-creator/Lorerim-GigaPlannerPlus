@@ -26,8 +26,7 @@ export function SkillTreesSidebarPanel() {
   const resetAllPerks = useBuildStore((s) => s.resetAllPerks);
   const activeSkillTreeId = useUiStore((s) => s.activeSkillTreeId);
   const skillTreeOpen = useUiStore(isSkillTreeOpenInMiddlePane);
-  const setActiveSkillTreeId = useUiStore((s) => s.setActiveSkillTreeId);
-  const setMiddleView = useUiStore((s) => s.setMiddleView);
+  const openSkillTree = useUiStore((s) => s.openSkillTree);
 
   if (!gameData) return null;
 
@@ -78,10 +77,7 @@ export function SkillTreesSidebarPanel() {
               <button
                 key={tree.skillId}
                 type="button"
-                onClick={() => {
-                  setActiveSkillTreeId(tree.skillId);
-                  setMiddleView("skill-trees");
-                }}
+                onClick={() => openSkillTree(tree.skillId)}
                 className={cn(
                   "grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-0.5 overflow-hidden rounded-[var(--radius-sm)] border p-1 text-left transition-colors",
                   hasProblem &&
@@ -124,12 +120,12 @@ export function SkillTreesSidebarPanel() {
                     {skillLevel}
                   </span>
                 </div>
-                <div className="flex min-h-0 items-center justify-center overflow-hidden px-0.5 pb-0.5 pt-px">
+                <div className="flex min-h-0 items-center justify-center overflow-hidden p-px">
                   <PerkTreeMiniView
                     tree={tree}
                     compact
                     conflictPerkIds={conflictPerkIds}
-                    className="aspect-square max-h-full w-full max-w-full"
+                    className="h-full w-full"
                   />
                 </div>
               </button>

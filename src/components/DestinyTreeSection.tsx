@@ -14,8 +14,7 @@ export function DestinyTreeSection() {
   const build = useBuildStore((s) => s.build);
   const activeSkillTreeId = useUiStore((s) => s.activeSkillTreeId);
   const skillTreeOpen = useUiStore(isSkillTreeOpenInMiddlePane);
-  const setMiddleView = useUiStore((s) => s.setMiddleView);
-  const setActiveSkillTreeId = useUiStore((s) => s.setActiveSkillTreeId);
+  const openSkillTree = useUiStore((s) => s.openSkillTree);
 
   if (!gameData) return null;
 
@@ -40,10 +39,7 @@ export function DestinyTreeSection() {
     <div className="border-t border-[var(--color-border)]/70 pt-3">
       <button
         type="button"
-        onClick={() => {
-          setActiveSkillTreeId(DESTINY_SKILL_ID);
-          setMiddleView("skill-trees");
-        }}
+        onClick={() => openSkillTree(DESTINY_SKILL_ID)}
         className={cn(
           "grid w-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-0.5 overflow-hidden rounded-[var(--radius-sm)] border p-1 text-left transition-colors",
           hasProblem && "border-[var(--color-error)]/35 bg-[var(--color-error)]/[0.04]",
@@ -69,12 +65,12 @@ export function DestinyTreeSection() {
             {setupLabels.destiny ?? tree.skillName}
           </span>
         </div>
-        <div className="flex aspect-[4/3] min-h-0 w-full items-center justify-center overflow-hidden px-0.5 pb-0.5 pt-px">
+        <div className="flex aspect-square min-h-0 w-full items-center justify-center overflow-hidden p-px">
           <PerkTreeMiniView
             tree={tree}
             compact
             conflictPerkIds={conflictPerkIds}
-            className="aspect-square max-h-full w-full max-w-full"
+            className="h-full w-full"
           />
         </div>
       </button>
