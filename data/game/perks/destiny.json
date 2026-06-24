@@ -378,7 +378,20 @@
         "destiny-13"
       ],
       "description": "Your bows, crossbows and throwing knives do 10% more damage.",
-      "effects": []
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "bowDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "crossbowDamage",
+          "value": 10,
+          "isPercent": true
+        }
+      ]
     },
     {
       "id": "destiny-21",
@@ -647,12 +660,6 @@
       ],
       "description": "Nearby allies deal 15% more physical damage and have 15% magic resistance during combat. Prices are 10% better.",
       "effects": [
-        {
-          "type": "derivedStat",
-          "stat": "magicResist",
-          "value": 15,
-          "isPercent": true
-        },
         {
           "type": "derivedStat",
           "stat": "priceModifier",

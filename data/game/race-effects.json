@@ -163,18 +163,6 @@
       "stat": "staminaRegen",
       "value": 25,
       "isPercent": true
-    },
-    {
-      "type": "derivedStat",
-      "stat": "speech",
-      "value": 15,
-      "isPercent": false
-    },
-    {
-      "type": "derivedStat",
-      "stat": "priceModifier",
-      "value": 15,
-      "isPercent": true
     }
   ],
   "altmer": [

@@ -116,7 +116,14 @@
         "block-defensive-stance"
       ],
       "description": "When bull rushing with your shield raised, you are a tremendous force to deal with. [Sprinting with a shield raised knocks down most targets and reduces incoming damage by 50%]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "damageTaken",
+          "value": -50,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -198,7 +205,20 @@
         "block-powerful-bashes"
       ],
       "description": "You can use your shield more offensively, using it as a deadly weapon. [50% more shield bash damage, double damage when not wearing heavy armor, 25% less shield bash stamina cost]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "meleeDamage",
+          "value": 50,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "sprintCostReduction",
+          "value": 25,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -211,7 +231,20 @@
       },
       "prerequisites": [],
       "description": "You can use your shield more offensively, using it as a deadly weapon. [100% more shield bash damage, double damage when not wearing heavy armor, 50% less shield bash stamina cost]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "meleeDamage",
+          "value": 100,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "sprintCostReduction",
+          "value": 50,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -329,7 +362,20 @@
         "block-improved-blocking"
       ],
       "description": "Like the Imperial Legions of old, you understand the advantage of shortswords in combat. [20% more bash damage, 20% more block and 20% less poise damage when wielding a shortsword]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "meleeDamage",
+          "value": 40,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "damageTaken",
+          "value": -20,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {

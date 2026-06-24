@@ -43,5 +43,18 @@ export function collectConditionalBonuses(
     }
   }
 
+  for (const perkId of state.selectedPerkIds) {
+    for (const tree of Object.values(game.perkTrees)) {
+      const perk = tree.perks.find((entry) => entry.id === perkId);
+      if (!perk) continue;
+      const details = extractConditionalBonusDetails(perk.description, perk.effects);
+      for (const text of details) {
+        for (const trimmed of trimBonusClauses(text)) {
+          entries.push({ source: perk.name, text: trimmed });
+        }
+      }
+    }
+  }
+
   return entries;
 }

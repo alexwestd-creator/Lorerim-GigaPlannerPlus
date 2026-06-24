@@ -31,7 +31,26 @@
         "illusion-novice-illusion"
       ],
       "description": "Perceptual illusion effects such as chameleon, dampen, hallucination, invisibility, muffle, night-eye, and sound are more effective and easier to cast. [1.25x magnitude, 1.25x duration, 0.9x cost for perceptual spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -61,7 +80,26 @@
         "illusion-adept-illusion"
       ],
       "description": "Shadow magic effects such as sanctuary, shadow drain, shadow step, shadow stride, and shadow summon are more effective and easier to cast. [1.25x magnitude, 1.25x duration, 0.9x cost for shadow spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -91,7 +129,26 @@
         "illusion-novice-illusion"
       ],
       "description": "Emotional illusion effects such as calm, charm, command, fear, frenzy, and rally are more effective and easier to cast. [Increased success chance, 1.25x magnitude, 1.25x duration, 0.9x cost for emotional spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -121,7 +178,26 @@
         "illusion-adept-illusion"
       ],
       "description": "Delusive illusion effects such as blind, death, nightmare, noise, pain, silence, and sleep are more effective and easier to cast. [Increased success chance, 1.25x magnitude, 1.25x duration, 0.9x cost for delusive spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -211,7 +287,14 @@
         "illusion-shadow-shaping"
       ],
       "description": "Shadow illusion spells are improved with additional effects. Shadow summons last longer. [Improved effect for shadow spells, 4x duration for shadow summon spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 300,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -226,7 +309,14 @@
         "illusion-emotional-illusions"
       ],
       "description": "Your emotional illusion spells seep deep into the targets' mind, further reducing their chance to break free. [Increased success chance and 2x duration for emotional illusion spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 100,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {

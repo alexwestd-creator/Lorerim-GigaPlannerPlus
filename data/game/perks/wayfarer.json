@@ -203,14 +203,7 @@
         "wayfarer-cheap-tricks"
       ],
       "description": "Nearby allies, but not the player, gain 150 armor rating and 15% magical resistance.",
-      "effects": [
-        {
-          "type": "derivedStat",
-          "stat": "armorRating",
-          "value": 150,
-          "isPercent": false
-        }
-      ],
+      "effects": [],
       "prerequisitesAny": []
     },
     {

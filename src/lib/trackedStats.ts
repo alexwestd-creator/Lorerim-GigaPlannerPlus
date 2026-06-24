@@ -108,6 +108,26 @@ function addBonusSource(
   sources.set(statId, list);
 }
 
+function applyRangedDamageBonus(
+  totals: Map<string, number>,
+  sources: Map<string, BonusSource[]>,
+  rangedDamage: number,
+  source: Pick<BonusSource, "name" | "labelKey">,
+): void {
+  if (rangedDamage === 0) return;
+  addNumericEntry(totals, "bowDamage", rangedDamage);
+  addNumericEntry(totals, "crossbowDamage", rangedDamage);
+  for (const statId of ["bowDamage", "crossbowDamage"] as const) {
+    addBonusSource(sources, statId, {
+      name: source.name,
+      labelKey: source.labelKey,
+      value: rangedDamage,
+      valueKind: "percent",
+      isPercent: true,
+    });
+  }
+}
+
 function applyMeleeDamageBonus(
   totals: Map<string, number>,
   sources: Map<string, BonusSource[]>,
@@ -169,6 +189,11 @@ function applySourcedEffect(
 
   if (effect.stat === "meleeDamage") {
     applyMeleeDamageBonus(totals, sources, effect.value, source);
+    return;
+  }
+
+  if (effect.stat === "rangedDamage") {
+    applyRangedDamageBonus(totals, sources, effect.value, source);
     return;
   }
 

@@ -293,7 +293,14 @@
       },
       "prerequisites": [],
       "description": "You can directly consume alchemical ingredients to draw their effects. [2x magnitude for ingredients consumed]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 100,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -306,7 +313,14 @@
       },
       "prerequisites": [],
       "description": "You can directly consume alchemical ingredients to draw their effects. [5x magnitude for ingredients consumed]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 400,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -321,7 +335,20 @@
         "alchemy-improved-poisons"
       ],
       "description": "Your poisons are highly corrosive, enabling you to ignore 20% of the armor rating of an affected target for their duration.",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "armorPenetrationMelee",
+          "value": 20,
+          "isPercent": false
+        },
+        {
+          "type": "derivedStat",
+          "stat": "armorPenetrationRanged",
+          "value": 20,
+          "isPercent": false
+        }
+      ],
       "prerequisitesAny": []
     },
     {

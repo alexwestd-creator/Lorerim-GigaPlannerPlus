@@ -129,7 +129,14 @@
         "alteration-adept-alteration"
       ],
       "description": "You've become exceptionally good at making your alteration spells more stable. Thus, they now last longer. [1.5x alteration spell duration]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 50,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -144,7 +151,14 @@
         "alteration-stability"
       ],
       "description": "Your knowledge of the very fabric of magic itself allows you to cast any spell of any school with decreased effort. [0.9x spell cost for all schools of magic]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -159,7 +173,20 @@
         "alteration-metamagical-thesis"
       ],
       "description": "Having delved even deeper in metamagical lore, you can cast any spell more effectively and augment all other magical effects. [1.1x magnitude, 1.1x duration for all schools of magic]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -220,7 +247,26 @@
         "alteration-novice-alteration"
       ],
       "description": "Transmutation, size-shifting, shape-shifting spells are stonger and more efficient. [1.1x magnitude, 1.1x duration, 0.9x cost for transmutation spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -250,7 +296,20 @@
         "alteration-apprentice-alteration"
       ],
       "description": "You can more easily handle telekinetic spells, increasing their power and efficiency. [1.25x magnitude, 0.9x cost for telekinetic spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -287,7 +346,26 @@
         "alteration-adept-alteration"
       ],
       "description": "Wind spells are stronger and more efficient. [1.25x magnitude, 1.25x duration, 0.9x cost for wind spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {

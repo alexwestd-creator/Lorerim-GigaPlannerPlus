@@ -19,13 +19,7 @@
       "effects": [
         {
           "type": "derivedStat",
-          "stat": "meleeDamage",
-          "value": 20,
-          "isPercent": true
-        },
-        {
-          "type": "derivedStat",
-          "stat": "rangedDamage",
+          "stat": "twoHandDamage",
           "value": 20,
           "isPercent": true
         }
@@ -45,13 +39,7 @@
       "effects": [
         {
           "type": "derivedStat",
-          "stat": "meleeDamage",
-          "value": 40,
-          "isPercent": true
-        },
-        {
-          "type": "derivedStat",
-          "stat": "rangedDamage",
+          "stat": "twoHandDamage",
           "value": 40,
           "isPercent": true
         }

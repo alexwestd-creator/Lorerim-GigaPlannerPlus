@@ -106,7 +106,20 @@
         "destruction-novice-destruction"
       ],
       "description": "You now are able to intensify the heat of your fire spells. Thus, they now deal increased damage. [1.1x magnitude, 0.9x cost for fire spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -119,7 +132,20 @@
       },
       "prerequisites": [],
       "description": "Your fire spells burn with almost otherworldly heat and consume earth and flesh with terrifying ease. [1.25x magnitude, 0.9x cost for fire spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -155,6 +181,18 @@
           "stat": "fireResist",
           "value": 25,
           "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 5,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
         }
       ],
       "prerequisitesAny": []
@@ -171,7 +209,20 @@
         "destruction-novice-destruction"
       ],
       "description": "You now are able to improve your ice spells and thereby increase their effectiveness. [1.1x magnitude, 0.9x cost for frost spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -184,7 +235,20 @@
       },
       "prerequisites": [],
       "description": "Your ice spells freeze even air in a trice and make the harsh winters of Skyrim look like a refreshing breeze. [1.25x magnitude, 0.9x cost for frost spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -220,6 +284,18 @@
           "stat": "frostResist",
           "value": 25,
           "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 5,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
         }
       ],
       "prerequisitesAny": []
@@ -236,7 +312,20 @@
         "destruction-novice-destruction"
       ],
       "description": "You can now energize your lightning spells more effectively, causing them to deal more damage. [1.1x magnitude, 0.9x cost for shock spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -249,7 +338,20 @@
       },
       "prerequisites": [],
       "description": "Compared to your lightning spells, the worst tempests would look like a mild summer breeze. [1.25x magnitude, 0.9x cost for shock spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -284,6 +386,18 @@
           "type": "derivedStat",
           "stat": "shockResist",
           "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 5,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
           "isPercent": true
         }
       ],
@@ -331,7 +445,20 @@
         "destruction-novice-destruction"
       ],
       "description": "You now are able to improve your Arcane spells and thereby increase their effectiveness. [1.1x magnitude, 0.9x cost for arcane spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -344,7 +471,20 @@
       },
       "prerequisites": [],
       "description": "Your Arcane spells are more powerful and you can cast them more efficiently. [1.25x magnitude, 0.9x cost for arcane spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -374,7 +514,20 @@
         "destruction-novice-destruction"
       ],
       "description": "You now are able to improve your Entropic spells and thereby increase their effectiveness. [1.1x magnitude, 0.9x cost for entropic spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -387,7 +540,20 @@
       },
       "prerequisites": [],
       "description": "Your Entropic spells are more powerful and you can cast them more efficiently. [1.2x magnitude, 0.8x cost for entropic spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 20,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -20,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -417,7 +583,14 @@
         "destruction-apprentice-destruction"
       ],
       "description": "You can deliver powerful force with touch and nova spells, causing more damage and staggering targets. [1.25x magnitude for touch and nova spells, 25% chance to stagger for damaging touch and nova spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -447,7 +620,20 @@
         "destruction-novice-destruction"
       ],
       "description": "You can more efficiently absorb energy from targets. Absorb spells are more powerful and costs less magicka. [1.1x magnitude, 0.9x cost for absorb spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -460,7 +646,20 @@
       },
       "prerequisites": [],
       "description": "You can absorb even more energy from targets with greater efficiency. [1.25x magnitude, 0.9x cost for absorb spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -475,7 +674,14 @@
         "destruction-blood-magic"
       ],
       "description": "You can absorb much more health from living targets. [1.25x magnitude for absorb health spells on living targets]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {

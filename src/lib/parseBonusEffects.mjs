@@ -36,8 +36,93 @@ function flag(stat) {
   return { type: "flag", stat };
 }
 
+/**
+ * @param {string | number} multiplier
+ * @returns {number}
+ */
+function multiplierToPercent(multiplier) {
+  return Math.round((Number(multiplier) - 1) * 100);
+}
+
+/**
+ * @param {string} fullText
+ * @returns {string[] | null}
+ */
+function detectWeaponDamageStats(fullText) {
+  const lower = fullText.toLowerCase();
+  if (/two-?handed\s+weapons?/.test(lower)) return ["twoHandDamage"];
+  if (/one-?handed\s+weapons?/.test(lower)) return ["oneHandDamage"];
+  if (/\bbows?\b/.test(lower) && /\bcrossbows?\b/.test(lower)) {
+    return ["bowDamage", "crossbowDamage"];
+  }
+  if (/\bbows?\b/.test(lower)) return ["bowDamage"];
+  if (/\bcrossbows?\b/.test(lower)) return ["crossbowDamage"];
+  if (/shield\s+bash/.test(lower)) return ["meleeDamage"];
+  if (/bow\s+bash/.test(lower)) return ["bowDamage"];
+  return null;
+}
+
+/**
+ * @param {Effect[]} effects
+ * @param {string} fullText
+ * @param {number} value
+ */
+function applyGenericDamageBoost(effects, fullText, value) {
+  const weaponStats = detectWeaponDamageStats(fullText);
+  if (weaponStats) {
+    for (const stat of weaponStats) {
+      effects.push(derived(stat, value));
+    }
+    return;
+  }
+  effects.push(derived("meleeDamage", value));
+  effects.push(derived("rangedDamage", value));
+}
+
+const ALLY_LEADERSHIP_DESCRIPTION =
+  /\blead your allies\b|\beffectively lead your allies\b|\bnearby allies,?\s+but\s+not\s+the\s+player\b|\ballies,?\s+but\s+not\s+the\s+player\b/i;
+
+/**
+ * @param {string} phrase
+ * @returns {boolean}
+ */
+function isAllyOnlyPhrase(phrase) {
+  const trimmed = String(phrase ?? "").trim();
+  if (!trimmed) return false;
+  if (/\bbut\s+not\s+the\s+player\b/i.test(trimmed)) return true;
+  if (/\bimprove\s+nearby\s+allies\b/i.test(trimmed)) return true;
+  if (/\bnearby\s+(?:summoned\s+or\s+)?reanimated\s+allies\b/i.test(trimmed)) return true;
+  if (/\bof\s+nearby\s+allies\b/i.test(trimmed)) return true;
+  if (/\btheir\s+(?:regeneration|skills|magicka|stamina)\b/i.test(trimmed)) return true;
+  if (/\bnearby\s+allies\b/i.test(trimmed) && !/\byou(?:rself|\s+and)\b/i.test(trimmed)) {
+    return true;
+  }
+  if (/^allies\b/i.test(trimmed) && !/\byou\b/i.test(trimmed)) return true;
+  return false;
+}
+
+/**
+ * @param {string} fullText
+ * @returns {boolean}
+ */
+function isAllyLeadershipDescription(fullText) {
+  return ALLY_LEADERSHIP_DESCRIPTION.test(fullText);
+}
+
+/**
+ * @param {string} text
+ * @param {RegExpMatchArray} match
+ * @returns {boolean}
+ */
+function isAllyOnlyMatch(text, match) {
+  const before = text.slice(0, match.index);
+  const start = Math.max(before.lastIndexOf(". "), before.lastIndexOf(", "), 0);
+  const clause = text.slice(start, match.index + match[0].length + 40).replace(/^[.,\s]+/, "");
+  return isAllyOnlyPhrase(clause);
+}
+
 const COMMA_PROTECT =
-  /health,\s*magicka(?:,\s*and\s+stamina)?|no health,\s*magicka(?:\s+or\s+stamina)?|fire,\s*frost\s+and\s+shock|head,\s*chest,\s*hands,\s*and\s+feet/gi;
+  /health,\s*magicka(?:,\s*and\s+stamina)?|no health,\s*magicka(?:\s+or\s+stamina)?|fire,\s*frost\s+and\s+shock|head,\s*chest,\s*hands,\s*and\s+feet|bows,\s*crossbows/gi;
 
 /**
  * @param {string} clause
@@ -156,24 +241,29 @@ function hasConditionalTail(text, match) {
 
 /**
  * @param {string} segmentText
+ * @param {string} fullText
  * @returns {Effect[]}
  */
-function parseSegment(segmentText) {
+function parseSegment(segmentText, fullText) {
   const normalized = segmentText.replace(/\s+/g, " ").trim();
   const sentences = normalized
     .split(/\.\s+/)
     .map((sentence) => sentence.trim())
     .filter(Boolean);
   const clauses = sentences.length > 1 ? sentences : [normalized];
-  return clauses.flatMap((clause) => parseSegmentClause(clause));
+  return clauses.flatMap((clause) => parseSegmentClause(clause, fullText));
 }
 
 /**
  * @param {string} clause
+ * @param {string} fullText
  * @returns {Effect[]}
  */
-function parseSegmentClause(clause) {
+function parseSegmentClause(clause, fullText) {
   if (/^\s*(?:when|if|while)\b/i.test(clause)) {
+    return [];
+  }
+  if (isAllyOnlyPhrase(clause)) {
     return [];
   }
 
@@ -196,14 +286,25 @@ function parseSegmentClause(clause) {
   }
   const textsToParse =
     commaParts.length > 1 ? commaParts : [remaining.replace(/\.$/, "")];
-  return [...effects, ...textsToParse.flatMap((part) => parseRulesOnText(part))];
+  return [
+    ...effects,
+    ...textsToParse.flatMap((part) => {
+      if (/^\s*(?:when|if|while)\b/i.test(part) || isAllyOnlyPhrase(part)) return [];
+      return parseRulesOnText(part, fullText);
+    }),
+  ];
 }
 
 /**
  * @param {string} rawText
+ * @param {string} [fullText]
  * @returns {Effect[]}
  */
-function parseRulesOnText(rawText) {
+function parseRulesOnText(rawText, fullText = rawText) {
+  if (isAllyLeadershipDescription(fullText) && rawText !== fullText) {
+    return [];
+  }
+
   const effects = [];
   const text = rawText.replace(/\s+/g, " ");
 
@@ -738,9 +839,9 @@ function parseRulesOnText(rawText) {
     {
       pattern: /(?:^|,\s*)(\d+)%\s+more\s+damage\b/gi,
       apply(match) {
-        const value = Number(match[1]);
-        effects.push(derived("meleeDamage", value));
-        effects.push(derived("rangedDamage", value));
+        const before = text.slice(Math.max(0, match.index - 30), match.index);
+        if (/\bdeal\s*$/i.test(before.trimEnd())) return;
+        applyGenericDamageBoost(effects, fullText, Number(match[1]));
       },
     },
     {
@@ -1040,10 +1141,129 @@ function parseRulesOnText(rawText) {
         effects.push(derived("sprintCostReduction", Number(match[1]), false));
       },
     },
+    {
+      pattern: /(\d+(?:\.\d+)?)x\s+(?:spell\s+)?cost(?:\s+for\s+all\s+schools(?:\s+of\s+magic)?)?/gi,
+      apply(match) {
+        if (hasConditionalTail(text, match)) return;
+        effects.push(derived("spellCost", multiplierToPercent(match[1])));
+      },
+    },
+    {
+      pattern: /(\d+(?:\.\d+)?)x\s+magnitude/gi,
+      apply(match) {
+        if (hasConditionalTail(text, match)) return;
+        effects.push(derived("spellDamage", multiplierToPercent(match[1])));
+      },
+    },
+    {
+      pattern: /(\d+(?:\.\d+)?)x\s+(?:\w+\s+)?(?:spell\s+)?duration/gi,
+      apply(match) {
+        if (hasConditionalTail(text, match)) return;
+        effects.push(derived("spellDuration", multiplierToPercent(match[1])));
+      },
+    },
+    {
+      pattern:
+        /(\d+)%\s+more\s+(?:power\s+attack\s+)?(?:(?:shield|bow)\s+bash|bash)\s+damage/gi,
+      apply(match) {
+        const value = Number(match[1]);
+        const bashType = match[0].toLowerCase();
+        if (bashType.includes("bow bash")) {
+          effects.push(derived("bowDamage", value));
+          return;
+        }
+        effects.push(derived("meleeDamage", value));
+      },
+    },
+    {
+      pattern:
+        /(\d+)%\s+less\s+(?:(?:shield|bow)\s+bash|power\s+attack\s+)?\s*stamina\s+cost/gi,
+      apply(match) {
+        effects.push(derived("sprintCostReduction", Number(match[1])));
+      },
+    },
+    {
+      pattern: /two-?handed\s+weapons?\s+deal\s+(\d+)%\s+more\s+damage/gi,
+      apply(match) {
+        effects.push(derived("twoHandDamage", Number(match[1])));
+      },
+    },
+    {
+      pattern: /one-?handed\s+weapons?\s+deal\s+(\d+)%\s+more\s+damage/gi,
+      apply(match) {
+        effects.push(derived("oneHandDamage", Number(match[1])));
+      },
+    },
+    {
+      pattern: /bows?,?\s+crossbows?\s+and\s+throwing\s+knives\s+do\s+(\d+)%\s+more\s+damage/gi,
+      apply(match) {
+        const value = Number(match[1]);
+        effects.push(derived("bowDamage", value));
+        effects.push(derived("crossbowDamage", value));
+      },
+    },
+    {
+      pattern: /take\s+(\d+)%\s+less\s+physical\s+damage/gi,
+      apply(match) {
+        if (hasConditionalTail(text, match)) return;
+        effects.push(derived("damageTaken", -Number(match[1])));
+      },
+    },
+    {
+      pattern: /ignore\s+(\d+)%\s+of\s+(?:the\s+)?armor\s+rating/gi,
+      apply(match) {
+        const value = Number(match[1]);
+        effects.push(derived("armorPenetrationMelee", value, false));
+        effects.push(derived("armorPenetrationRanged", value, false));
+      },
+    },
+    {
+      pattern: /reduces?\s+incoming\s+damage\s+by\s+(\d+)%/gi,
+      apply(match) {
+        if (hasConditionalTail(text, match)) return;
+        effects.push(derived("damageTaken", -Number(match[1])));
+      },
+    },
+    {
+      pattern: /\+(\d+)\s+health\s+and\s+\+([\d.]+)\/s\s+health\s+regeneration/gi,
+      apply(match) {
+        if (hasConditionalTail(text, match)) return;
+        effects.push(attribute("health", Number(match[1])));
+        effects.push(derived("healthRegenRate", Number(match[2]), false));
+      },
+    },
+    {
+      pattern: /(\d+)%\s+more\s+bash\s+damage/gi,
+      apply(match) {
+        effects.push(derived("meleeDamage", Number(match[1])));
+      },
+    },
+    {
+      pattern: /(\d+)%\s+more\s+block\b/gi,
+      apply(match) {
+        effects.push(derived("damageTaken", -Number(match[1])));
+      },
+    },
+    {
+      pattern: /(\d+)%\s+chance\s+to\s+disarm/gi,
+      apply(match) {
+        if (hasConditionalTail(text, match)) return;
+        effects.push(derived("criticalHitChance", Number(match[1])));
+      },
+    },
+    {
+      pattern: /(\d+)%\s+increased\s+armor\s+penetration/gi,
+      apply(match) {
+        const value = Number(match[1]);
+        effects.push(derived("armorPenetrationMelee", value));
+        effects.push(derived("armorPenetrationRanged", value));
+      },
+    },
   ];
 
   for (const rule of rules) {
     for (const match of text.matchAll(rule.pattern)) {
+      if (isAllyOnlyMatch(text, match)) continue;
       rule.apply(match);
     }
   }
@@ -1083,13 +1303,14 @@ function dedupeEffects(effects) {
  * @returns {Effect[]}
  */
 export function parseBonusEffects(bonusText) {
-  const sources = extractParseSources(bonusText);
+  const fullText = String(bonusText ?? "").trim();
+  const sources = extractParseSources(fullText);
   if (sources.length === 0) return [];
 
   const segments = sources.flatMap((source) => segmentBonusText(source));
   if (segments.length === 0) return [];
 
-  const effects = segments.flatMap((segment) => parseSegment(segment.text));
+  const effects = segments.flatMap((segment) => parseSegment(segment.text, fullText));
   return dedupeEffects(effects);
 }
 
@@ -1199,7 +1420,7 @@ export function extractConditionalBonusDetails(bonusText, effects = []) {
         conditional.push(ensurePeriod(part));
         continue;
       }
-      if (parseSegment(part).length === 0 && isMechanicalClause(part)) {
+      if (parseSegment(part, text).length === 0 && isMechanicalClause(part)) {
         conditional.push(ensurePeriod(part));
       }
     }

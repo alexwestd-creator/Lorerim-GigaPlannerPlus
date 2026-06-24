@@ -93,7 +93,20 @@
         "restoration-novice-restoration"
       ],
       "description": "You've gained more knowledge about healing spells, allowing you to heal wounds more efficiently. [1.1x magnitude, 0.9x cost for healing and cure spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -108,7 +121,14 @@
         "restoration-improved-turning"
       ],
       "description": "You've learned the art of weaving mystical energies into your spells, making all of them more effective against the undead and Daedra. [1.1x spell magnitude, 1.2x spell duration on undead and daedra]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 20,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -234,7 +254,20 @@
         "restoration-novice-restoration"
       ],
       "description": "You now are able to improve your poison spells and thereby increase their effectiveness. [1.1x magnitude, 0.9x cost for poison spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -264,7 +297,20 @@
         "restoration-novice-restoration"
       ],
       "description": "You now are able to improve your sun spells and thereby increase their effectiveness. [1.1x magnitude, 0.9x cost for sun spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -294,7 +340,26 @@
         "restoration-novice-restoration"
       ],
       "description": "Turn, Purify, and Abjuration spells are stonger and more efficient. [1.1x magnitude, 1.1x duration, 0.9x cost for turn spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -309,7 +374,26 @@
         "restoration-novice-restoration"
       ],
       "description": "Ward, Fortify, and Resist spells are stonger and more efficient. [1.1x magnitude, 1.1x duration, 0.9x cost for protection spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 10,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {

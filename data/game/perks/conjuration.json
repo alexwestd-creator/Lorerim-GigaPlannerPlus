@@ -134,7 +134,14 @@
         "conjuration-novice-conjuration"
       ],
       "description": "You've developed your skill for summoning undead and rasing the dead, improving their potency and duration. [2x undead summon spell duration, stronger reanimated dead, 1.25x reanimate level limit, 5x reanimate spell duration]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 400,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -149,7 +156,14 @@
         "conjuration-necromancy"
       ],
       "description": "Your knowledge of the realms of the dead surpasses that of many. You can raise stronger entities and they last much longer. [3x undead summon spell duration (overwrite), 1.5x reanimate level limit (overwrite), 10x reanimate spell duration (overwrite)]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 900,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -179,7 +193,14 @@
         "conjuration-novice-conjuration"
       ],
       "description": "You've become skilled in binding daedra in shape of weapons and armors. Bound weapons and armors are stronger longer-lasting, and easier to cast. [stronger bound items, 1.25x bound spell duration, 0.5x bound weapon spell cost]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 25,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -209,7 +230,14 @@
         "conjuration-mystic-infusion"
       ],
       "description": "You can bind stronger or additional effects to your bound weapons and armors. Bound weapons and armors are more easier to cast and last longer. [improved bound effects, 1.5x bound spell duration (overwrite), 0.8x bound item spell cost (overwrite)]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 50,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {
@@ -381,7 +409,26 @@
         "conjuration-adept-conjuration"
       ],
       "description": "Your training on Soul Magic allows you to channel more strength with higher efficiency. [1.25x magnitude, 1.25x duration, 0.9x cost for necrotic and soul spells]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "spellDamage",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellDuration",
+          "value": 25,
+          "isPercent": true
+        },
+        {
+          "type": "derivedStat",
+          "stat": "spellCost",
+          "value": -10,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {

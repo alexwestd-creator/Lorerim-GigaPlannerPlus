@@ -330,7 +330,14 @@
         "marksman-ranged-combat-training"
       ],
       "description": "You can use your bow or crossbow as a melee weapon in close combat. [Double damage with bow bash, bow bash staggers targets, 50% less bow bash stamina cost]",
-      "effects": [],
+      "effects": [
+        {
+          "type": "derivedStat",
+          "stat": "sprintCostReduction",
+          "value": 50,
+          "isPercent": true
+        }
+      ],
       "prerequisitesAny": []
     },
     {

@@ -327,4 +327,57 @@ assertEffects(parseBonusEffects("Strong Stomach: Your metabolism can digest raw 
   { type: "flag", stat: "rawFood" },
 ]);
 
+assertEffects(
+  parseBonusEffects(
+    "Your improved fighting techniques increase your damage dealt with two-handed weapons. [20% more damage]",
+  ),
+  [{ type: "derivedStat", stat: "twoHandDamage", value: 20, isPercent: true }],
+);
+
+assertEffects(
+  parseBonusEffects(
+    "[50% more shield bash damage, double damage when not wearing heavy armor, 25% less shield bash stamina cost]",
+  ),
+  [
+    { type: "derivedStat", stat: "meleeDamage", value: 50, isPercent: true },
+    { type: "derivedStat", stat: "sprintCostReduction", value: 25, isPercent: true },
+  ],
+);
+
+assertEffects(parseBonusEffects("[0.9x spell cost for all schools of magic]"), [
+  { type: "derivedStat", stat: "spellCost", value: -10, isPercent: true },
+]);
+
+assertEffects(parseBonusEffects("[1.1x magnitude, 1.1x duration for all schools of magic]"), [
+  { type: "derivedStat", stat: "spellDamage", value: 10, isPercent: true },
+  { type: "derivedStat", stat: "spellDuration", value: 10, isPercent: true },
+]);
+
+assertEffects(
+  parseBonusEffects("Your bows, crossbows and throwing knives do 10% more damage."),
+  [
+    { type: "derivedStat", stat: "bowDamage", value: 10, isPercent: true },
+    { type: "derivedStat", stat: "crossbowDamage", value: 10, isPercent: true },
+  ],
+);
+
+assertEffects(
+  parseBonusEffects(
+    "Your knowledge in combat tactics allow you to effectively lead your allies in combat. [Improve nearby allies' skills by 10%, increase magicka, stamina, and their regeneration by 50(%), increase unarmed damage by 5]",
+  ),
+  [],
+);
+
+assertEffects(
+  parseBonusEffects("Nearby allies, but not the player, gain 150 armor rating and 15% magical resistance."),
+  [],
+);
+
+assertEffects(
+  parseBonusEffects(
+    "Nearby allies deal 15% more physical damage and have 15% magic resistance during combat. Prices are 10% better.",
+  ),
+  [{ type: "derivedStat", stat: "priceModifier", value: 10, isPercent: true }],
+);
+
 console.log("parse-bonus-effects: ok");

@@ -37,6 +37,7 @@
     { "id": "damageTaken", "label": "Damage Taken", "category": "combat", "valueKind": "percent" },
     { "id": "unarmedDamage", "label": "Unarmed Damage", "category": "combat", "valueKind": "flat" },
     { "id": "spellDamage", "label": "Spell Damage", "category": "combat", "valueKind": "percent" },
+    { "id": "spellDuration", "label": "Spell Duration", "category": "combat", "valueKind": "percent" },
     { "id": "spellCost", "label": "Spell Cost", "category": "combat", "valueKind": "percent" },
     { "id": "armorRating", "label": "Armor Rating", "category": "combat", "valueKind": "flat" },
     { "id": "armorPenetrationMelee", "label": "Melee Armor Penetration", "category": "combat", "valueKind": "flat" },

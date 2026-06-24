@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applySkillTrainingRangeChange,
+  computeBuild,
   computeSkillPointsToReach,
   computeSkillPointsSpentOnSkill,
   createInitialBuildState,
@@ -253,5 +254,39 @@ describe("buildEngine perk selection", () => {
     const next = removePerk(game, build, "block-improved-blocking");
 
     expect(next.selectedPerkIds).toEqual([]);
+  });
+});
+
+describe("computeBuild ally-only perks", () => {
+  const game = getTestGameData();
+
+  const allyPerkIds = [
+    "speech-commander",
+    "speech-commander-r2",
+    "speech-commander-r3",
+    "wayfarer-commander",
+    "wayfarer-leader",
+    "wayfarer-captain",
+    "destiny-37",
+  ];
+
+  it("does not apply ally-targeted Commander and leadership bonuses to the player", () => {
+    const state = createTestBuildState({
+      playerLevel: 50,
+      selectedPerkIds: allyPerkIds,
+    });
+    const computed = computeBuild(game, state);
+
+    const allySources = computed.appliedBonuses.flatMap((bonus) =>
+      bonus.sources
+        .filter((source) =>
+          ["Commander", "Leader", "Captain", "Bard"].includes(source.name),
+        )
+        .map((source) => ({ stat: bonus.id, value: source.value })),
+    );
+
+    expect(allySources).toEqual([
+      { stat: "priceModifier", value: 10 },
+    ]);
   });
 });
