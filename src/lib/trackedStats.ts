@@ -398,17 +398,21 @@ export function computeTrackedStats(
   return entries;
 }
 
+function formatRoundedStatNumber(value: number): string {
+  return Number(value.toFixed(2)).toString();
+}
+
 export function formatTrackedStatValue(entry: TrackedStatEntry): string {
   if (entry.valueKind === "flag") return "Yes";
   const sign = entry.value > 0 ? "+" : "";
-  return `${sign}${entry.value}${entry.isPercent ? "%" : ""}`;
+  return `${sign}${formatRoundedStatNumber(entry.value)}${entry.isPercent ? "%" : ""}`;
 }
 
 export function formatBonusSourceValue(source: BonusSource): string {
   if (source.valueKind === "flag") return "Yes";
   const isPercent = source.isPercent ?? source.valueKind === "percent";
   const sign = source.value > 0 ? "+" : "";
-  return `${sign}${source.value}${isPercent ? "%" : ""}`;
+  return `${sign}${formatRoundedStatNumber(source.value)}${isPercent ? "%" : ""}`;
 }
 
 export function resolveBonusSourceName(
