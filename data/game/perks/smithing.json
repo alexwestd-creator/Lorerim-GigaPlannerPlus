@@ -113,12 +113,12 @@
         "y": 23
       },
       "prerequisites": [
-        "smithing-craftsmanship",
-        "smithing-tailoring-polishing"
+        "smithing-craftsmanship"
       ],
       "description": "You've gained quite some finesse, allowing you to craft plate armor and fine jewelry. You have also found a way to melt and crush certain gems into alchemically usable dust.",
       "effects": [],
-      "prerequisitesAny": []
+      "prerequisitesAny": [],
+      "costsPerkPoint": true
     },
     {
       "id": "smithing-legendary-blacksmithing",
@@ -231,7 +231,8 @@
       ],
       "description": "You may choose an item type: One-Handed, Two-Handed, Light Armor, Heavy Armor or Archery. Items of the chosen type can be improved 10% better at a grindstone or workbench.",
       "effects": [],
-      "prerequisitesAny": []
+      "prerequisitesAny": [],
+      "costsPerkPoint": true
     },
     {
       "id": "smithing-iron-lore",
