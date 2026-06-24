@@ -8,6 +8,8 @@ import {
   ensurePlayerLevelForBuild,
   getMinimumPlayerLevelForBuild,
   getRemainingDestinyPerkPoints,
+  getSelectedPerksBelowSkillRequirement,
+  getSkillLevelForPerkChecks,
   type BuildPlayerLevelWarnings,
 } from "@/engine/buildEngine";
 import { cn } from "@/lib/utils";
@@ -198,7 +200,9 @@ export function LevelBar() {
 
   const { baseLevel, maxPlayerLevel, initialPerkPoints } = gameData.game.mechanics.leveling;
   const minimumPlayerLevel = getMinimumPlayerLevelForBuild(gameData.game, build);
-  const ensuredPlayerLevel = ensurePlayerLevelForBuild(gameData.game, build).playerLevel;
+  const ensuredPlayerLevel = ensurePlayerLevelForBuild(gameData.game, build, {
+    ensureMinimumPlayerLevel: true,
+  }).playerLevel;
   const perkPointsInfo = formatLabel(barLabels.perkPointsInfo, {
     initial: initialPerkPoints,
     perLevel: computed.perkPointsPerLevel,
@@ -221,6 +225,7 @@ export function LevelBar() {
     ? Math.abs(getRemainingDestinyPerkPoints(gameData.game, build))
     : 0;
   const warnings = getBuildPlayerLevelWarnings(gameData.game, build);
+  const skillReqConflicts = getSelectedPerksBelowSkillRequirement(gameData.game, build);
 
   const perkOverBudgetMessage = perkOverBudget
     ? formatLabel(barLabels.perkOverBudgetAlert, {
@@ -252,11 +257,33 @@ export function LevelBar() {
       })
     : null;
 
+  const skillReqConflictMessages =
+    skillReqConflicts.length === 1
+      ? [
+          formatLabel(barLabels.skillReqConflictSingle, {
+            perk: skillReqConflicts[0].name,
+            required: skillReqConflicts[0].skillReq,
+            current: getSkillLevelForPerkChecks(
+              gameData.game,
+              build,
+              skillReqConflicts[0].skillId,
+            ),
+          }),
+        ]
+      : skillReqConflicts.length > 1
+        ? [
+            formatLabel(barLabels.skillReqConflictMultiple, {
+              count: skillReqConflicts.length,
+            }),
+          ]
+        : [];
+
   const alertMessages = [
     ...(perkOverBudgetMessage ? [perkOverBudgetMessage] : []),
     ...(destinyOverBudgetMessage ? [destinyOverBudgetMessage] : []),
     ...(skillOverBudgetMessage ? [skillOverBudgetMessage] : []),
     ...(trainingOverBudgetMessage ? [trainingOverBudgetMessage] : []),
+    ...skillReqConflictMessages,
     ...formatPlayerLevelWarningMessages(barLabels, warnings, build.playerLevel),
   ];
   const alertSummary =

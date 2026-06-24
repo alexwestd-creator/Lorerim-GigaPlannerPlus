@@ -4,12 +4,15 @@ import {
   computeSkillPointsToReach,
   computeSkillPointsSpentOnSkill,
   createInitialBuildState,
+  ensurePlayerLevelForBuild,
   getEarnedDestinyPerkPoints,
   getEarnedPerkPoints,
   getEarnedSkillPoints,
   getMaxAllowedSkillLevel,
+  getMinimumPlayerLevelForBuild,
   getRemainingPerkPoints,
   getRemainingSkillPoints,
+  getRequiredPlayerLevel,
   getSkillLevelIncreaseCost,
   canSelectPerk,
   arePrerequisitesMet,
@@ -33,14 +36,14 @@ describe("buildEngine economy", () => {
 
   it("computes earned skill points from player level", () => {
     const state = createTestBuildState({ playerLevel: 5 });
-    expect(getEarnedSkillPoints(game, state)).toBe(80);
+    expect(getEarnedSkillPoints(game, state)).toBe(120);
   });
 
   it("uses tiered skill level costs", () => {
     const { mechanics } = game;
     expect(getSkillLevelIncreaseCost(mechanics, 10)).toBe(1);
     expect(getSkillLevelIncreaseCost(mechanics, 26)).toBe(2);
-    expect(getSkillLevelIncreaseCost(mechanics, 76)).toBe(4);
+    expect(getSkillLevelIncreaseCost(mechanics, 76)).toBe(6);
   });
 
   it("sums skill point costs across level ranges", () => {
@@ -79,6 +82,40 @@ describe("buildEngine economy", () => {
     expect(getRemainingSkillPoints(game, withTraining)).toBe(
       getRemainingSkillPoints(game, state) + 1,
     );
+  });
+});
+
+describe("ensurePlayerLevelForBuild", () => {
+  const game = getTestGameData();
+
+  it("raises level for perk point budget when ensureMinimumPlayerLevel is set", () => {
+    const state = createTestBuildState({
+      playerLevel: 5,
+      selectedPerkIds: [
+        "block-improved-blocking",
+        "destruction-novice-destruction",
+        "evasion-agility",
+        "conjuration-novice-conjuration",
+        "restoration-novice-restoration",
+        "illusion-novice-illusion",
+        "two-handed-great-weapon-mastery",
+        "marksman-ranged-combat-training",
+        "alchemy-alchemical-lore",
+      ],
+    });
+
+    expect(getRemainingPerkPoints(game, state)).toBeLessThan(0);
+    expect(getRequiredPlayerLevel(game, state)).toBeLessThan(
+      getMinimumPlayerLevelForBuild(game, state),
+    );
+
+    const withoutFlag = ensurePlayerLevelForBuild(game, state);
+    expect(withoutFlag.playerLevel).toBe(5);
+    expect(getRemainingPerkPoints(game, withoutFlag)).toBeLessThan(0);
+
+    const withFlag = ensurePlayerLevelForBuild(game, state, { ensureMinimumPlayerLevel: true });
+    expect(withFlag.playerLevel).toBe(7);
+    expect(getRemainingPerkPoints(game, withFlag)).toBeGreaterThanOrEqual(0);
   });
 });
 

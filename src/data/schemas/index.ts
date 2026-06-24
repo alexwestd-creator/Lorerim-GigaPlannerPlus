@@ -438,6 +438,8 @@ export const labelsSchema = z.object({
     playerLevelSkillIncreaseMultiple: z.string(),
     playerLevelPerkReqSingle: z.string(),
     playerLevelPerkReqMultiple: z.string(),
+    skillReqConflictSingle: z.string(),
+    skillReqConflictMultiple: z.string(),
     playerLevelWarningMixed: z.string(),
     playerLevelAttributeOverBudgetSingle: z.string(),
     playerLevelAttributeOverBudgetMultiple: z.string(),

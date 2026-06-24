@@ -369,7 +369,9 @@ export const useBuildStore = create<BuildStore>()(
           const { gameData, build } = get();
           if (!gameData) return;
 
-          const nextBuild = ensurePlayerLevelForBuild(gameData.game, build);
+          const nextBuild = ensurePlayerLevelForBuild(gameData.game, build, {
+            ensureMinimumPlayerLevel: true,
+          });
           commitBuild(set, get, nextBuild);
         },
 

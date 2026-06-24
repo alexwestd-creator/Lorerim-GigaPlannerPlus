@@ -99,6 +99,8 @@
     "playerLevelSkillIncreaseMultiple": "{count} skills exceed the per-level skill gain limit at player level {playerLevel}. Raise your level or lower those skills.",
     "playerLevelPerkReqSingle": "{perk} requires player level {required} (you are level {playerLevel}). Raise your level or remove the perk.",
     "playerLevelPerkReqMultiple": "{count} selected perks require a higher player level than {playerLevel}.",
+    "skillReqConflictSingle": "{perk} requires skill level {required} (your skill is {current}). Raise the skill or remove the perk.",
+    "skillReqConflictMultiple": "{count} selected perks require a higher skill level than you have. Raise the skill or remove perks.",
     "playerLevelWarningMixed": "Some skills, perks, and attribute choices exceed limits at level {playerLevel}. Adjust your build or raise your level.",
     "playerLevelAttributeOverBudgetSingle": "1 attribute choice exceeds what's allowed at level {playerLevel}. Remove choices or raise your level.",
     "playerLevelAttributeOverBudgetMultiple": "{count} attribute choices exceed what's allowed at level {playerLevel}. Remove choices or raise your level.",
@@ -106,7 +108,7 @@
     "setToMinimumLevel": "Set to minimum level",
     "setToMinimumLevelInfo": "Set player level to the lowest level that supports your current perks, skills, attribute choices, and point spending.",
     "ensurePlayerLevel": "Raise to required level",
-    "ensurePlayerLevelInfo": "Raise player level to satisfy skill caps, training, skill gain limits, and perk level requirements."
+    "ensurePlayerLevelInfo": "Raise player level to satisfy skill caps, training, skill gain limits, perk level requirements, and perk/skill point spending."
   },
   "panels": {
     "character-setup": {

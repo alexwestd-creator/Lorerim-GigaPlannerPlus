@@ -3,7 +3,7 @@
     "baseLevel": 1,
     "maxPlayerLevel": 101,
     "maxSkillLevel": 100,
-    "skillPointsPerLevel": 20,
+    "skillPointsPerLevel": 30,
     "perkPointsPerLevel": 1,
     "initialPerkPoints": 3,
     "maxSkillAbovePlayerLevel": 50,
@@ -21,7 +21,7 @@
       { "minLevel": 1, "maxLevel": 25, "cost": 1 },
       { "minLevel": 26, "maxLevel": 50, "cost": 2 },
       { "minLevel": 51, "maxLevel": 75, "cost": 3 },
-      { "minLevel": 76, "maxLevel": 100, "cost": 4 }
+      { "minLevel": 76, "maxLevel": 100, "cost": 6 }
     ],
     "attributePointsPerLevel": [5, 5, 5]
   },
