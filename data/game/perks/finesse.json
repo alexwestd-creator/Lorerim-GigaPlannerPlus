@@ -145,10 +145,7 @@
         "x": 8,
         "y": 26
       },
-      "prerequisites": [
-        "finesse-nimble-fingers",
-        "finesse-trapper"
-      ],
+      "prerequisites": [],
       "description": "You have unburdened your body. You gain 75 armor rating and gain 5% armor penetration and 5 unarmed damage.",
       "effects": [
         {
@@ -170,7 +167,11 @@
           "isPercent": true
         }
       ],
-      "prerequisitesAny": []
+      "prerequisitesAny": [
+        "finesse-nimble-fingers",
+        "finesse-trapper"
+      ],
+      "costsPerkPoint": true
     },
     {
       "id": "finesse-sound-body-r2",
@@ -205,7 +206,8 @@
       "prerequisitesAny": [
         "finesse-nimble-fingers",
         "finesse-trapper"
-      ]
+      ],
+      "costsPerkPoint": true
     },
     {
       "id": "finesse-sound-mind",
