@@ -1,9 +1,6 @@
 import {
-  useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
-  useState,
   type MouseEvent,
   type MutableRefObject,
   type PointerEvent as ReactPointerEvent,
@@ -16,13 +13,18 @@ import {
   getPerkNodeRequirements,
 } from "@/lib/perkRequirements";
 import {
-  estimatePerkBadgeStackHeight,
   PERK_DOUBLE_TAP_MS,
   PERK_TOOLTIP_DELAY_MS,
   perkAbbreviation,
-  resolvePerkBadgePlacement,
 } from "@/lib/perkTreeViewLayout";
+import {
+  DEFAULT_PERK_BADGE_PLACEMENT,
+  getPerkBadgeContainerClassName,
+  getPerkBadgeContainerStyle,
+  type PerkBadgePlacement,
+} from "@/lib/perkBadgeLayout";
 import { cn } from "@/lib/utils";
+import type { PerkBadgeVisibility } from "@/store/uiStore";
 
 function renderNextRankSection(nextRank: Perk, labels: Record<string, string>) {
   const nextRankRequirements = getPerkNodeRequirements(nextRank);
@@ -72,9 +74,11 @@ export interface PerkNodeProps {
   onForceTake: (perkId: string) => boolean;
   onRemove: (perkId: string) => void;
   labels: Record<string, string>;
-  showSkillRequirements: boolean;
+  badgeVisibility: PerkBadgeVisibility;
+  badgePerkName: string;
+  badgePlacement?: PerkBadgePlacement;
+  positionKey: string;
   tooltipScale?: number;
-  badgeLayoutRevision?: string;
   touchTooltipOpen?: boolean;
   touchAnchor?: { x: number; y: number } | null;
   onOpenTouchTooltip: (anchor: { x: number; y: number }) => void;
@@ -101,9 +105,11 @@ export function PerkNode({
   onForceTake,
   onRemove,
   labels,
-  showSkillRequirements,
+  badgeVisibility,
+  badgePerkName,
+  badgePlacement = DEFAULT_PERK_BADGE_PLACEMENT,
+  positionKey,
   tooltipScale = 1,
-  badgeLayoutRevision = "",
   touchTooltipOpen = false,
   touchAnchor = null,
   onOpenTouchTooltip,
@@ -113,7 +119,6 @@ export function PerkNode({
   const longPressTimerRef = useRef<number | null>(null);
   const circleRef = useRef<HTMLSpanElement>(null);
   const badgeRef = useRef<HTMLDivElement>(null);
-  const [badgesAbove, setBadgesAbove] = useState(() => position.y >= 75);
   const longPressTriggeredRef = useRef(false);
   const singleTapTooltipTimerRef = useRef<number | null>(null);
   const lastTapRef = useRef(0);
@@ -310,54 +315,11 @@ export function PerkNode({
       "border-[var(--color-perk-locked)] bg-[var(--color-surface)]/80 text-[var(--color-muted)] opacity-55 group-hover:opacity-80",
   );
 
-  const requirementLabel = formatPerkNodeRequirementLabel(badgeRequirements);
-  const badgeCount =
-    (showSkillRequirements && requirementLabel ? 1 : 0) + (stackRank ? 1 : 0);
-
-  const updateBadgePlacement = useCallback(() => {
-    if (badgeCount === 0) {
-      setBadgesAbove(false);
-      return;
-    }
-
-    const circle = circleRef.current;
-    if (!circle) return;
-
-    const circleRect = circle.getBoundingClientRect();
-    const viewport = circle.closest("[data-perk-tree-viewport]");
-    const viewportRect = viewport instanceof HTMLElement ? viewport.getBoundingClientRect() : null;
-    const stackHeight =
-      badgeRef.current?.getBoundingClientRect().height ??
-      estimatePerkBadgeStackHeight(badgeCount);
-    const preferAbove = resolvePerkBadgePlacement(
-      circleRect.top,
-      circleRect.bottom,
-      stackHeight,
-      viewportRect ?? undefined,
-    );
-
-    setBadgesAbove((current) => (current === preferAbove ? current : preferAbove));
-  }, [badgeCount]);
-
-  useLayoutEffect(() => {
-    updateBadgePlacement();
-    if (badgeCount === 0) return;
-
-    const frame = requestAnimationFrame(updateBadgePlacement);
-    return () => cancelAnimationFrame(frame);
-  }, [
-    updateBadgePlacement,
-    badgeLayoutRevision,
-    showSkillRequirements,
-    requirementLabel,
-    stackRank,
-    nodeDiameterPx,
-  ]);
-
-  useEffect(() => {
-    window.addEventListener("resize", updateBadgePlacement);
-    return () => window.removeEventListener("resize", updateBadgePlacement);
-  }, [updateBadgePlacement]);
+  const requirementLabel = formatPerkNodeRequirementLabel(badgeRequirements, {
+    visibility: badgeVisibility,
+    perkName: badgePerkName,
+  });
+  const badgeCount = (requirementLabel ? 1 : 0) + (stackRank ? 1 : 0);
 
   const requirementBadgeClassName = cn(
     "whitespace-nowrap rounded border px-1 py-px text-[10px] font-semibold tabular-nums leading-none shadow-[0_1px_4px_rgba(0,0,0,0.45)]",
@@ -450,6 +412,7 @@ export function PerkNode({
       <button
         type="button"
         data-perk-node
+        data-perk-position-key={positionKey}
         aria-label={perk.name}
         onMouseDown={handleMouseDown}
         onPointerDown={handlePointerDown}
@@ -461,6 +424,7 @@ export function PerkNode({
       >
         <span
           ref={circleRef}
+          data-perk-circle
           className={circleClassName}
           style={{ width: nodeDiameterPx, height: nodeDiameterPx, fontSize: labelFontPx }}
         >
@@ -469,12 +433,11 @@ export function PerkNode({
         {badgeCount > 0 ? (
           <div
             ref={badgeRef}
-            className={cn(
-              "absolute left-1/2 flex -translate-x-1/2 flex-col items-center gap-0.5",
-              badgesAbove ? "bottom-full mb-0.5 flex-col-reverse" : "top-full mt-0.5",
-            )}
+            data-perk-badges
+            className={getPerkBadgeContainerClassName(badgePlacement)}
+            style={getPerkBadgeContainerStyle(badgePlacement)}
           >
-            {showSkillRequirements && requirementLabel && (
+            {requirementLabel && (
               <span className={requirementBadgeClassName}>{requirementLabel}</span>
             )}
             {stackRank && (
