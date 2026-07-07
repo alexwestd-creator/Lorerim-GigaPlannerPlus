@@ -253,9 +253,14 @@ export const useBuildStore = create<BuildStore>()(
         setRace: (raceId) => {
           const { gameData, build } = get();
           if (!gameData) return;
-          const candidate = { ...build, raceId };
-          const preserved = preserveSkillPointAllocations(gameData.game, build, candidate);
-          commitBuild(set, get, reconcileBuild(gameData.game, preserved));
+          const previous = reconcileBuild(gameData.game, build);
+          const candidate = { ...previous, raceId };
+          const preserved = preserveSkillPointAllocations(gameData.game, previous, candidate);
+          const reconciled = reconcileBuild(gameData.game, preserved);
+          const leveled = ensurePlayerLevelForBuild(gameData.game, reconciled, {
+            ensureMinimumPlayerLevel: true,
+          });
+          commitBuild(set, get, leveled);
         },
 
         setBirthsign: (birthsignId) => {
@@ -317,7 +322,14 @@ export const useBuildStore = create<BuildStore>()(
           }
 
           // Keep absolute skill levels — major/minor only changes the floor bonus, not invested levels.
-          commitBuild(set, get, reconcileBuild(gameData.game, { ...build, majorSkillIds }));
+          const previous = reconcileBuild(gameData.game, build);
+          const candidate = { ...previous, majorSkillIds };
+          const preserved = preserveSkillPointAllocations(gameData.game, previous, candidate);
+          const reconciled = reconcileBuild(gameData.game, preserved);
+          const leveled = ensurePlayerLevelForBuild(gameData.game, reconciled, {
+            ensureMinimumPlayerLevel: true,
+          });
+          commitBuild(set, get, leveled);
         },
 
         toggleMinorSkill: (skillId) => {
@@ -331,7 +343,14 @@ export const useBuildStore = create<BuildStore>()(
             minorSkillIds.push(skillId);
           }
 
-          commitBuild(set, get, reconcileBuild(gameData.game, { ...build, minorSkillIds }));
+          const previous = reconcileBuild(gameData.game, build);
+          const candidate = { ...previous, minorSkillIds };
+          const preserved = preserveSkillPointAllocations(gameData.game, previous, candidate);
+          const reconciled = reconcileBuild(gameData.game, preserved);
+          const leveled = ensurePlayerLevelForBuild(gameData.game, reconciled, {
+            ensureMinimumPlayerLevel: true,
+          });
+          commitBuild(set, get, leveled);
         },
 
         adjustAttribute: (stat, delta) => {
