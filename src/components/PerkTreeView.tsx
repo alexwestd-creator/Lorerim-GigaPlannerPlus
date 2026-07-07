@@ -1,10 +1,11 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type MouseEvent,
-  type MutableRefObject,
+  type PointerEvent as ReactPointerEvent,
+  type TouchEvent as ReactTouchEvent,
 } from "react";
 import {
   arePrerequisitesMet,
@@ -13,13 +14,11 @@ import {
   getPerkSkillId,
   getStoredSkillLevel,
 } from "@/engine/buildEngine";
-import type { Perk, PerkTree } from "@/data/schemas";
-import { CursorTooltip } from "@/components/ui/tooltip";
+import type { PerkTree } from "@/data/schemas";
+import { PerkNode } from "@/components/PerkNode";
+import { useSupportsHover } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import {
-  formatPerkNodeRequirementLabel,
-  getPerkNodeRequirements,
-} from "@/lib/perkRequirements";
+import { getPerkNodeRequirements } from "@/lib/perkRequirements";
 import {
   computePerkTreeEdgesPercentInBounds,
   getNextRankInStack,
@@ -31,289 +30,62 @@ import {
   groupPerksByPosition,
   resolvePerkTakeTarget,
 } from "@/lib/perkTreeGrid";
+import {
+  clampTreeViewTransform,
+  computeFitContainSize,
+  DEFAULT_TREE_VIEW_TRANSFORM,
+  getFitLayoutTuning,
+  getTouchDistance,
+  getViewportPointFromCenter,
+  GRID_UNIT_PX,
+  isPerkTreeInteractiveTarget,
+  MIN_TREE_ZOOM,
+  resolvePerkTooltipScale,
+  resolveTreeLayoutMetrics,
+  type FitLayoutTuning,
+  type TreeViewClampContext,
+  type TreeViewTransform,
+  zoomTreeViewAtPoint,
+} from "@/lib/perkTreeViewLayout";
 import { useBuildStore } from "@/store/buildStore";
 
 const EDITOR_NODE_EXTENT = 1.25;
 const EDITOR_BOUNDS_PADDING = 1.45;
-const GRID_UNIT_PX = 26;
-/** Shrink fitted trees so nodes sit inset from the render region edges. */
-const FIT_REGION_INSET_RATIO = 0.9;
 const DESTINY_SKILL_ID = "destiny";
-const BASE_NODE_DIAMETER_PX = 32;
-const NODE_DIAMETER_GRID_RATIO = BASE_NODE_DIAMETER_PX / GRID_UNIT_PX;
 
-function getTreeLayoutMetrics(
-  bounds: { width: number; height: number },
-  fit: boolean,
-  fitSize: { width: number; height: number } | null,
-): { gridUnitPx: number; nodeDiameterPx: number } {
-  const gridUnitPx =
-    fit && fitSize
-      ? Math.min(fitSize.width / bounds.width, fitSize.height / bounds.height)
-      : GRID_UNIT_PX;
+const DEFAULT_FIT_TUNING: FitLayoutTuning = getFitLayoutTuning(1920, 1080);
 
-  const nodeDiameterPx = Math.min(
-    BASE_NODE_DIAMETER_PX,
-    Math.max(14, gridUnitPx * NODE_DIAMETER_GRID_RATIO),
-  );
+function useFitContainArea(enabled: boolean) {
+  const areaRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
-  return { gridUnitPx, nodeDiameterPx };
-}
-
-function perkAbbreviation(name: string): string {
-  const words = name.split(/\s+/).filter((word) => /[A-Za-z]/.test(word));
-  if (words.length >= 2) {
-    return (words[0][0] + words[1][0]).toUpperCase();
-  }
-  const letters = name.replace(/[^A-Za-z]/g, "");
-  return (letters.slice(0, 2) || "?").toUpperCase();
-}
-
-function renderNextRankSection(nextRank: Perk, labels: Record<string, string>) {
-  const nextRankRequirements = getPerkNodeRequirements(nextRank);
-  return (
-    <div className="mt-2 border-t border-[var(--color-border)]/60 pt-2">
-      <p className="text-xs font-medium text-[var(--color-accent-muted)]">
-        {labels.nextRank}
-      </p>
-      {nextRankRequirements.skillReq !== null && (
-        <p className="mt-1 text-xs text-[var(--color-muted)]">
-          {labels.skillReq}: {nextRankRequirements.skillReq}
-        </p>
-      )}
-      {nextRankRequirements.playerLevelReq !== null && (
-        <p
-          className={cn(
-            "text-xs",
-            nextRankRequirements.skillReq !== null ? "mt-0.5" : "mt-1",
-            "text-[var(--color-muted)]",
-          )}
-        >
-          {labels.playerLevelReq}: {nextRankRequirements.playerLevelReq}
-        </p>
-      )}
-      <p className="mt-1 text-xs leading-relaxed">{nextRank.description}</p>
-    </div>
-  );
-}
-
-interface PerkNodeProps {
-  perk: Perk;
-  position: { x: number; y: number };
-  requirements: { skillReq: number | null; playerLevelReq: number | null };
-  badgeRequirements: { skillReq: number | null; playerLevelReq: number | null };
-  takeTargetId: string;
-  stackRank: { current: number; total: number } | null;
-  nextRank: Perk | undefined;
-  isSelected: boolean;
-  isAvailable: boolean;
-  isLocked: boolean;
-  isConflict: boolean;
-  isInteractive: boolean;
-  paintOrder: number;
-  nodeDiameterPx: number;
-  tookPerkWithLastClickRef: MutableRefObject<boolean>;
-  onTryTake: (perkId: string) => boolean;
-  onForceTake: (perkId: string) => boolean;
-  onRemove: (perkId: string) => void;
-  labels: Record<string, string>;
-  showSkillRequirements: boolean;
-}
-
-function PerkNode({
-  perk,
-  position,
-  requirements,
-  badgeRequirements,
-  takeTargetId,
-  stackRank,
-  nextRank,
-  isSelected,
-  isAvailable,
-  isLocked,
-  isConflict,
-  isInteractive,
-  paintOrder,
-  nodeDiameterPx,
-  tookPerkWithLastClickRef,
-  onTryTake,
-  onForceTake,
-  onRemove,
-  labels,
-  showSkillRequirements,
-}: PerkNodeProps) {
-  const handleForceAllocate = () => {
-    if (!isInteractive || tookPerkWithLastClickRef.current) return false;
-    const tookPerk = onForceTake(perk.id);
-    tookPerkWithLastClickRef.current = tookPerk;
-    return tookPerk;
-  };
-
-  const handleMouseDown = (event: MouseEvent<HTMLButtonElement>) => {
-    if (!isInteractive) return;
-
-    window.getSelection()?.removeAllRanges();
-
-    if (event.button === 2) {
-      event.preventDefault();
-      event.stopPropagation();
-      onRemove(perk.id);
+  useEffect(() => {
+    if (!enabled) {
+      setContainerSize(null);
       return;
     }
 
-    if (event.button !== 0) return;
+    const element = areaRef.current;
+    if (!element) return;
 
-    if (event.detail > 1) {
-      handleForceAllocate();
-      return;
-    }
+    const update = () => {
+      const containerWidth = element.clientWidth;
+      const containerHeight = element.clientHeight;
+      if (!containerWidth || !containerHeight) return;
+      setContainerSize({ width: containerWidth, height: containerHeight });
+    };
 
-    tookPerkWithLastClickRef.current = onTryTake(takeTargetId);
-  };
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    update();
 
-  const handleDoubleClick = (event: MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    handleForceAllocate();
-  };
+    return () => observer.disconnect();
+  }, [enabled]);
 
-  const isPartialRank =
-    isSelected && stackRank !== null && stackRank.current < stackRank.total;
-
-  const labelFontPx = Math.max(8, Math.round(nodeDiameterPx * 0.30));
-  const circleClassName = cn(
-    "flex shrink-0 items-center justify-center rounded-full border-2 font-semibold leading-none transition-all",
-    isConflict &&
-      "border-[var(--color-error)] bg-[var(--color-error)]/30 text-[var(--color-foreground)] shadow-[var(--shadow-error-glow)] ring-[3px] ring-[var(--color-error)]/90 ring-offset-2 ring-offset-[var(--color-background)] animate-pulse",
-    !isConflict &&
-      isPartialRank &&
-      "border-[var(--color-perk-partial)] bg-[var(--color-perk-partial)]/30 text-[var(--color-perk-partial)] shadow-[0_0_12px_rgba(78,179,245,0.4)]",
-    !isConflict &&
-      isSelected &&
-      !isPartialRank &&
-      "border-[var(--color-perk-selected)] bg-[var(--color-perk-selected)]/30 text-[var(--color-perk-selected)] shadow-[0_0_12px_rgba(212,175,55,0.35)]",
-    !isConflict &&
-      !isSelected &&
-      isAvailable &&
-      "border-[var(--color-perk-available)] bg-[var(--color-surface-elevated)] text-[var(--color-foreground)] group-hover:scale-105 group-hover:border-[var(--color-accent)]",
-    !isConflict &&
-      !isSelected &&
-      !isAvailable &&
-      !isLocked &&
-      "border-[var(--color-perk-prereq)]/80 bg-[var(--color-surface)] text-[var(--color-muted)]",
-    !isConflict &&
-      isLocked &&
-      !isSelected &&
-      "border-[var(--color-perk-locked)] bg-[var(--color-surface)]/80 text-[var(--color-muted)] opacity-55 group-hover:opacity-80",
-  );
-
-  const requirementLabel = formatPerkNodeRequirementLabel(badgeRequirements);
-  const requirementBadgeClassName = cn(
-    "whitespace-nowrap rounded border px-1 py-px text-[10px] font-semibold tabular-nums leading-none shadow-[0_1px_4px_rgba(0,0,0,0.45)]",
-    "border-[var(--color-border)] bg-[var(--color-surface)]",
-    isConflict &&
-      "border-[var(--color-error)] bg-[var(--color-error)]/20 text-[var(--color-error)]",
-    !isConflict &&
-      isPartialRank &&
-      "border-[var(--color-perk-partial)]/60 text-[var(--color-perk-partial)]",
-    !isConflict &&
-      isSelected &&
-      !isPartialRank &&
-      "border-[var(--color-perk-selected)]/60 text-[var(--color-perk-selected)]",
-    !isConflict &&
-      !isSelected &&
-      isAvailable &&
-      "border-[var(--color-perk-available)]/60 text-[var(--color-foreground)]",
-    !isConflict && isLocked && !isSelected && "text-[var(--color-foreground)]/75",
-    !isConflict &&
-      !isSelected &&
-      !isAvailable &&
-      !isLocked &&
-      "text-[var(--color-foreground)]/85",
-  );
-  const stackRankBadgeClassName = requirementBadgeClassName;
-
-  const tooltipContent = (
-    <>
-      <p className="font-semibold text-[var(--color-accent)]">{perk.name}</p>
-      {stackRank && (
-        <p className="mt-0.5 text-xs text-[var(--color-muted)]">
-          {labels.perkRank}: {stackRank.current}/{stackRank.total}
-        </p>
-      )}
-      {requirements.skillReq !== null && (
-        <p className="mt-1 text-xs text-[var(--color-muted)]">
-          {labels.skillReq}: {requirements.skillReq}
-        </p>
-      )}
-      {requirements.playerLevelReq !== null && (
-        <p
-          className={cn(
-            "text-xs",
-            requirements.skillReq !== null ? "mt-0.5" : "mt-1",
-            isConflict
-              ? "font-medium text-[var(--color-error)]"
-              : "text-[var(--color-muted)]",
-          )}
-        >
-          {labels.playerLevelReq}: {requirements.playerLevelReq}
-        </p>
-      )}
-      <p className="mt-2 text-xs leading-relaxed">{perk.description}</p>
-      {nextRank && isSelected && renderNextRankSection(nextRank, labels)}
-      <p className="mt-2 text-xs font-medium text-[var(--color-muted)]">
-        {isConflict
-          ? labels.buildProblemLegend
-          : isSelected
-            ? nextRank
-              ? labels.upgradeAvailable
-              : labels.selected
-            : isLocked
-              ? labels.locked
-              : isAvailable
-                ? labels.available
-                : labels.locked}
-      </p>
-    </>
-  );
-
-  return (
-    <CursorTooltip
-      content={tooltipContent}
-      className={cn(
-        "absolute -translate-x-1/2 -translate-y-1/2 select-none",
-        !isInteractive && "pointer-events-none",
-      )}
-      style={{ left: `${position.x}%`, top: `${position.y}%`, zIndex: paintOrder }}
-    >
-      <button
-        type="button"
-        aria-label={perk.name}
-        onMouseDown={handleMouseDown}
-        onDoubleClick={handleDoubleClick}
-        onContextMenu={(event) => event.preventDefault()}
-        className="group relative border-0 bg-transparent p-0"
-      >
-        <span
-          className={circleClassName}
-          style={{ width: nodeDiameterPx, height: nodeDiameterPx, fontSize: labelFontPx }}
-        >
-          <span className="leading-none">{perkAbbreviation(perk.name)}</span>
-        </span>
-        {(showSkillRequirements && requirementLabel) || stackRank ? (
-          <div className="absolute left-1/2 top-full mt-0.5 flex -translate-x-1/2 flex-col items-center gap-0.5">
-            {showSkillRequirements && requirementLabel && (
-              <span className={requirementBadgeClassName}>{requirementLabel}</span>
-            )}
-            {stackRank && (
-              <span className={stackRankBadgeClassName}>
-                {stackRank.current}/{stackRank.total}
-              </span>
-            )}
-          </div>
-        ) : null}
-      </button>
-    </CursorTooltip>
-  );
+  return { areaRef, containerSize };
 }
 
 interface PerkTreeViewProps {
@@ -325,44 +97,6 @@ interface PerkTreeViewProps {
   /** Scale the tree to fit and center within the parent area. */
   fit?: boolean;
   className?: string;
-}
-
-function useFitContainSize(aspect: number, enabled: boolean) {
-  const areaRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
-
-  useEffect(() => {
-    if (!enabled) {
-      setSize(null);
-      return;
-    }
-
-    const element = areaRef.current;
-    if (!element) return;
-
-    const update = () => {
-      const containerWidth = element.clientWidth;
-      const containerHeight = element.clientHeight;
-      if (!containerWidth || !containerHeight) return;
-
-      const availableWidth = containerWidth * FIT_REGION_INSET_RATIO;
-      const availableHeight = containerHeight * FIT_REGION_INSET_RATIO;
-
-      if (availableWidth / availableHeight > aspect) {
-        setSize({ width: availableHeight * aspect, height: availableHeight });
-      } else {
-        setSize({ width: availableWidth, height: availableWidth / aspect });
-      }
-    };
-
-    const observer = new ResizeObserver(update);
-    observer.observe(element);
-    update();
-
-    return () => observer.disconnect();
-  }, [aspect, enabled]);
-
-  return { areaRef, size };
 }
 
 function PerkTreeView({
@@ -381,24 +115,260 @@ function PerkTreeView({
   const allocatePerk = useBuildStore((s) => s.allocatePerk);
   const removePerk = useBuildStore((s) => s.removePerk);
   const tookPerkWithLastClickRef = useRef(false);
+  const supportsHover = useSupportsHover();
+  const [touchTooltip, setTouchTooltip] = useState<{
+    positionKey: string;
+    anchor: { x: number; y: number };
+  } | null>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const panDragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startPanX: number;
+    startPanY: number;
+  } | null>(null);
+  const pinchStateRef = useRef<{
+    distance: number;
+    transform: TreeViewTransform;
+    pivotX: number;
+    pivotY: number;
+  } | null>(null);
+  const viewTransformRef = useRef(DEFAULT_TREE_VIEW_TRANSFORM);
+  const clampContextRef = useRef<TreeViewClampContext | null>(null);
+  const [viewTransform, setViewTransform] = useState<TreeViewTransform>(DEFAULT_TREE_VIEW_TRANSFORM);
+  const [isPanning, setIsPanning] = useState(false);
+
+  viewTransformRef.current = viewTransform;
+
+  const applyViewTransform = useCallback((next: TreeViewTransform) => {
+    const context = clampContextRef.current;
+    const resolved =
+      context && next.zoom > MIN_TREE_ZOOM
+        ? clampTreeViewTransform(next, context)
+        : next.zoom <= MIN_TREE_ZOOM
+          ? DEFAULT_TREE_VIEW_TRANSFORM
+          : next;
+    viewTransformRef.current = resolved;
+    setViewTransform(resolved);
+  }, []);
+
+  useEffect(() => {
+    applyViewTransform(DEFAULT_TREE_VIEW_TRANSFORM);
+    panDragRef.current = null;
+    pinchStateRef.current = null;
+    setIsPanning(false);
+    setTouchTooltip(null);
+  }, [tree.skillId, applyViewTransform]);
+
+  useEffect(() => {
+    if (!touchTooltip || supportsHover) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (target instanceof Element && target.closest("[data-perk-node]")) return;
+      setTouchTooltip(null);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [touchTooltip, supportsHover]);
+
+  const openTouchTooltip = useCallback(
+    (positionKey: string, anchor: { x: number; y: number }) => {
+      setTouchTooltip({ positionKey, anchor });
+    },
+    [],
+  );
+
+  const closeTouchTooltip = useCallback(() => {
+    setTouchTooltip(null);
+  }, []);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || !fit) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const point = getViewportPointFromCenter(viewport, event.clientX, event.clientY);
+      const zoomFactor = Math.exp(-event.deltaY * 0.002);
+      const current = viewTransformRef.current;
+      const next = zoomTreeViewAtPoint(
+        current,
+        current.zoom * zoomFactor,
+        point.x,
+        point.y,
+      );
+      if (
+        next.zoom === current.zoom &&
+        next.panX === current.panX &&
+        next.panY === current.panY
+      ) {
+        return;
+      }
+      applyViewTransform(next);
+    };
+
+    viewport.addEventListener("wheel", handleWheel, { passive: false });
+    return () => viewport.removeEventListener("wheel", handleWheel);
+  }, [fit, applyViewTransform]);
+
+  const handleViewportPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!fit || viewTransformRef.current.zoom <= MIN_TREE_ZOOM) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (isPerkTreeInteractiveTarget(event.target)) return;
+
+    panDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startPanX: viewTransformRef.current.panX,
+      startPanY: viewTransformRef.current.panY,
+    };
+    setIsPanning(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleViewportPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (pinchStateRef.current) return;
+    const drag = panDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    applyViewTransform({
+      ...viewTransformRef.current,
+      panX: drag.startPanX + (event.clientX - drag.startX),
+      panY: drag.startPanY + (event.clientY - drag.startY),
+    });
+  };
+
+  const endPanDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = panDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    panDragRef.current = null;
+    setIsPanning(false);
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+
+  const handleTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (!fit || event.touches.length !== 2 || !viewportRef.current) return;
+
+    const point = getViewportPointFromCenter(
+      viewportRef.current,
+      (event.touches[0].clientX + event.touches[1].clientX) / 2,
+      (event.touches[0].clientY + event.touches[1].clientY) / 2,
+    );
+    pinchStateRef.current = {
+      distance: getTouchDistance(event.touches),
+      transform: viewTransformRef.current,
+      pivotX: point.x,
+      pivotY: point.y,
+    };
+  };
+
+  const handleTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (!fit || event.touches.length !== 2 || !pinchStateRef.current) return;
+
+    const distance = getTouchDistance(event.touches);
+    if (!distance || !pinchStateRef.current.distance) return;
+
+    const pinch = pinchStateRef.current;
+    const next = zoomTreeViewAtPoint(
+      pinch.transform,
+      pinch.transform.zoom * (distance / pinch.distance),
+      pinch.pivotX,
+      pinch.pivotY,
+    );
+    if (
+      next.zoom === viewTransformRef.current.zoom &&
+      next.panX === viewTransformRef.current.panX &&
+      next.panY === viewTransformRef.current.panY
+    ) {
+      return;
+    }
+    applyViewTransform(next);
+  };
+
+  const handleTouchEnd = () => {
+    pinchStateRef.current = null;
+  };
+
+  const isTransformedView =
+    viewTransform.zoom !== MIN_TREE_ZOOM ||
+    viewTransform.panX !== 0 ||
+    viewTransform.panY !== 0;
 
   const isDestinyTree = tree.skillId === DESTINY_SKILL_ID;
 
+  const { areaRef, containerSize } = useFitContainArea(fit);
+  const fitTuning = useMemo(
+    () =>
+      containerSize
+        ? getFitLayoutTuning(containerSize.width, containerSize.height)
+        : DEFAULT_FIT_TUNING,
+    [containerSize],
+  );
   const bounds = useMemo(
     () =>
       getPerkTreeContentBounds(
         tree,
         EDITOR_NODE_EXTENT,
-        fit ? EDITOR_BOUNDS_PADDING + 0.6 : EDITOR_BOUNDS_PADDING,
+        fit
+          ? EDITOR_BOUNDS_PADDING + fitTuning.boundsExtraPadding
+          : EDITOR_BOUNDS_PADDING,
       ),
-    [tree, fit],
+    [tree, fit, fitTuning.boundsExtraPadding],
   );
   const aspect = bounds.width / bounds.height;
-  const { areaRef, size: fitSize } = useFitContainSize(aspect, fit);
-  const { gridUnitPx, nodeDiameterPx } = useMemo(
-    () => getTreeLayoutMetrics(bounds, fit, fitSize),
-    [bounds, fit, fitSize],
+  const fitSize = useMemo(() => {
+    if (!fit || !containerSize) return null;
+    return computeFitContainSize(
+      containerSize.width,
+      containerSize.height,
+      aspect,
+      fitTuning.regionInsetRatio,
+    );
+  }, [fit, containerSize, aspect, fitTuning.regionInsetRatio]);
+  const visiblePerks = useMemo(
+    () => getVisiblePerksForTree(tree, build.selectedPerkIds),
+    [tree, build.selectedPerkIds],
   );
+  const { gridUnitPx, nodeDiameterPx, treeEdgePaddingPx } = useMemo(
+    () => resolveTreeLayoutMetrics(bounds, fit, fitSize, visiblePerks, fitTuning),
+    [bounds, fit, fitSize, visiblePerks, fitTuning],
+  );
+  const tooltipScale = useMemo(
+    () =>
+      resolvePerkTooltipScale(
+        nodeDiameterPx,
+        containerSize ? Math.min(containerSize.width, containerSize.height) : null,
+      ),
+    [nodeDiameterPx, containerSize],
+  );
+  const badgeLayoutRevision = useMemo(
+    () =>
+      [
+        viewTransform.zoom,
+        viewTransform.panX,
+        viewTransform.panY,
+        containerSize?.width ?? 0,
+        containerSize?.height ?? 0,
+        fitSize?.width ?? 0,
+        fitSize?.height ?? 0,
+        treeEdgePaddingPx,
+      ].join(":"),
+    [viewTransform, containerSize, fitSize, treeEdgePaddingPx],
+  );
+
+  clampContextRef.current =
+    containerSize && fitSize
+      ? {
+          viewport: containerSize,
+          fitSize,
+          nodeDiameterPx,
+        }
+      : null;
+
   const nodeRadiusGrid = nodeDiameterPx / (2 * gridUnitPx);
 
   const edges = useMemo(
@@ -410,11 +380,6 @@ function PerkTreeView({
   );
 
   const stacksByPosition = useMemo(() => groupPerksByPosition(tree), [tree]);
-
-  const visiblePerks = useMemo(
-    () => getVisiblePerksForTree(tree, build.selectedPerkIds),
-    [tree, build.selectedPerkIds],
-  );
 
   const paintOrderedPerks = useMemo(
     () =>
@@ -455,10 +420,8 @@ function PerkTreeView({
 
   const treeCanvas = (
     <div
-      className={cn(
-        "relative h-full w-full",
-        !fit && "overflow-hidden",
-      )}
+      data-perk-tree-viewport={fit ? undefined : true}
+      className={cn("relative h-full w-full", !fit && "overflow-hidden")}
       style={
         fit
           ? undefined
@@ -510,9 +473,10 @@ function PerkTreeView({
           ? { ...badgeRequirements, skillReq: null }
           : badgeRequirements;
 
-        const meetsPlayerLevelReq =
-          takeTargetPerk.playerLevelReq == null ||
-          build.playerLevel >= takeTargetPerk.playerLevelReq;
+        const meetsPlayerLevelReq = (() => {
+          const playerLevelReq = getPerkNodeRequirements(takeTargetPerk).playerLevelReq;
+          return playerLevelReq == null || build.playerLevel >= playerLevelReq;
+        })();
 
         const meetsPerkReq =
           meetsPlayerLevelReq &&
@@ -552,6 +516,14 @@ function PerkTreeView({
             onRemove={removePerk}
             labels={labels}
             showSkillRequirements={showSkillRequirements}
+            tooltipScale={tooltipScale}
+            badgeLayoutRevision={badgeLayoutRevision}
+            touchTooltipOpen={touchTooltip?.positionKey === positionKey}
+            touchAnchor={
+              touchTooltip?.positionKey === positionKey ? touchTooltip.anchor : null
+            }
+            onOpenTouchTooltip={(anchor) => openTouchTooltip(positionKey, anchor)}
+            onCloseTouchTooltip={closeTouchTooltip}
           />
         );
       })}
@@ -561,15 +533,53 @@ function PerkTreeView({
   if (fit) {
     return (
       <div ref={areaRef} className={cn("h-full min-h-0 w-full", className)}>
-        <div className="flex h-full w-full items-center justify-center">
-          {fitSize ? (
-            <div
-              className="relative shrink-0"
-              style={{ width: fitSize.width, height: fitSize.height }}
-            >
-              {treeCanvas}
-            </div>
-          ) : null}
+        <div
+          ref={viewportRef}
+          data-perk-tree-viewport
+          className={cn(
+            "relative h-full w-full touch-none overflow-hidden",
+            isPanning
+              ? "cursor-grabbing"
+              : viewTransform.zoom > MIN_TREE_ZOOM && "cursor-grab",
+          )}
+          onPointerDown={handleViewportPointerDown}
+          onPointerMove={handleViewportPointerMove}
+          onPointerUp={endPanDrag}
+          onPointerCancel={endPanDrag}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+        >
+          <div
+            className="pointer-events-none absolute right-2 top-2 z-30"
+            aria-live="polite"
+            aria-label={`Zoom ${Math.round(viewTransform.zoom * 100)} percent`}
+          >
+            <span className="rounded-full border border-[var(--color-border)]/70 bg-[var(--color-surface)]/90 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-[var(--color-muted)] shadow-[0_2px_8px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+              {Math.round(viewTransform.zoom * 100)}%
+            </span>
+          </div>
+          <div className="flex h-full w-full items-center justify-center">
+            {fitSize ? (
+              <div
+                className="relative shrink-0 box-border"
+                style={{
+                  width: fitSize.width,
+                  height: fitSize.height,
+                  padding: treeEdgePaddingPx,
+                  ...(isTransformedView
+                    ? {
+                        transform: `translate(${viewTransform.panX}px, ${viewTransform.panY}px) scale(${viewTransform.zoom})`,
+                        transformOrigin: "center center",
+                      }
+                    : undefined),
+                }}
+              >
+                <div className="relative h-full w-full">{treeCanvas}</div>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     );

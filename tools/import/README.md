@@ -38,6 +38,7 @@ npm run import:lorerim -- --install "D:\Wabbajack\Modlists\Lorerim" --dry-run
 1. **MO2 profile** — active profile from `ModOrganizer.ini` (`modlist.txt` + `loadorder.txt`)
 2. **Plugin files** — each plugin in load order is read from the winning MO2 mod folder (`modlist.txt`, bottom wins), except **`LoreRim - xEdit64 Output`** and **`LoreRim - Synthesis Output`**, which always override the same plugin name from upstream mods
 3. **Records** — when the same Editor ID appears in multiple plugins, the **last** plugin in `loadorder.txt` wins
+4. **Non-mechanics plugins** — plugins with no PERK/SPEL/RACE/MESG/QUST/AVIF/FLST/MGEF records (textures, meshes, etc.) are classified once and skipped on later runs via `tools/import/cache/non-mechanics-plugins.json`. Use `--rescan-plugins` to rebuild that cache.
 
 | Game source | Planner output |
 |-------------|----------------|
@@ -55,13 +56,14 @@ npm run import:lorerim -- --install "D:\Wabbajack\Modlists\Lorerim" --dry-run
 | `--install`, `-i <path>` | LoreRim install root (**required**; must contain `ModOrganizer.exe`) |
 | `--dry-run` | Parse and print a summary without writing files |
 | `--plugin-limit <n>` | Scan only the first N plugins (debug) |
+| `--rescan-plugins` | Reclassify every plugin; ignore the non-mechanics skip cache |
 | `--help`, `-h` | Show usage |
 
 ### Runtime
 
-A full LoreRim load order is ~3,500 plugins. The importer reads each plugin **once** (PERK, AVIF, SPEL, RACE, MESG, QUST, Wintersun MGEF, altar blessings, and trait FormList data in a single pass) with parallel I/O across up to 8 plugins at a time. Expect the scan to take **about one minute** on a fast SSD (previously several minutes with repeated full scans).
+A full LoreRim load order is ~3,500 plugins. The importer classifies each plugin (quick record-type header scan), skips asset-only plugins using a persistent cache, then reads the remainder **once** (PERK, AVIF, SPEL, RACE, MESG, QUST, Wintersun MGEF, altar blessings, and trait FormList data in a single pass) with parallel I/O across up to 8 plugins at a time. Expect the scan to take **about one minute** on a fast SSD after the first run (subsequent runs are faster when most plugins are cached as non-mechanics).
 
-Set `IMPORT_PLUGIN_CONCURRENCY` to tune parallel plugin reads (default `8`).
+Set `IMPORT_PLUGIN_CONCURRENCY` to tune parallel plugin reads (default `8`). Set `IMPORT_CLASSIFY_CONCURRENCY` for the classification pass (default `16`).
 
 ### Modpack version
 
@@ -86,7 +88,7 @@ Perk trees are built from the final merged **`AVIF`** perk trees (what the game 
 | Default layout for newly added perks (curated coords from `data/game/perks` via `giga-planner-layout.json`, or prerequisite graph) | Perk `position` and `grid` per skill tree (matched by skill + perk name; multi-rank stacks share one cell) |
 | Multiple AVIF parents for one perk → `prerequisitesAny` (OR) | Stable perk `id`, `prerequisites` / `prerequisitesAny` wiring, explicit `costsPerkPoint: true`, and hand-tuned `effects` (matched by skill + name + `skillReq`) |
 | All traits from `Traits_AbilityList` (base FormList + FLM additions) | — |
-| Race names, descriptions, ability bonuses (`REQ_Ability_Race_*`), starting skills/attributes from RACE `DATA` | `race-effects.json`, race `speedBonus` / `attributeBonus` when not in `DATA` |
+| Race names, descriptions, ability bonuses (`REQ_Ability_Race_*`), starting skills/attributes from RACE `DATA`, parsed race `effects` in `race-effects.json` | race `speedBonus` / `attributeBonus` when not in `DATA` |
 | Birthsign names, bonuses, groups | — (birthsign `effects` are re-parsed from bonus text each import) |
 | Deity names, shrine/follower/devotee/tenets text, racial starting deities, can-follow races, shrine locations (lorerim.com guide) | — (deity `effects` are re-parsed from shrine text each import) |
 | `manifest.json` → `version` (from installed Wabbajack list) | `manifest.json` limits, skills, and other fields |
@@ -99,7 +101,8 @@ Perk metadata enrichment uses plugin `PERK` conditions and `AVIF` links:
 
 - **Skill requirement** — `REQ_*` Editor IDs with `_025_` / `_050_` / `_075_` / `_100_` tiers, else top-level `PERK` conditions (`GetBaseActorValue >= N`). A multi-rank perk's base rank keeps its own record skill requirement (the by-name metadata can't distinguish ranks).
 - **Prerequisites** — `GetIsID` perk checks on top-level `PERK` conditions when present; otherwise parent links from the final `AVIF` perk tree for that skill. AVIF links are not merged on top of `GetIsID` results. When multiple prerequisites remain, same-tier siblings from AVIF layout noise are dropped in favor of lower `skillReq` gates (e.g. Apprentice Restoration keeps Novice only, not Mental Acuity). Self-referential prerequisites (a higher rank's `GetIsID` on its own lower rank) are dropped.
-- **Multi-rank perks** — the game shows one `AVIF` node per perk but tracks ranks via the `PERK` `NNAM` (Next Perk) chain. The importer follows that chain and emits one node per rank, all sharing the base node's grid cell, with each rank's own skill requirement (the engine orders a stack by ascending `skillReq`). Higher ranks carry no prerequisites — the stack mechanism gates them. `DATA.numRanks` is ignored because repurposed vanilla forms (e.g. Stealth) leave it stale.
+- **Multi-rank perks** — the game shows one `AVIF` node per perk but tracks ranks via the `PERK` `NNAM` (Next Perk) chain. The importer follows that chain and emits one node per rank, all sharing the base node's grid cell, with each rank's own skill requirement (the engine orders a stack by ascending `skillReq`, then `playerLevelReq`, then rank suffix). Higher ranks inherit rank 1 prerequisites only (not in-chain `GetIsID` gates on lower ranks). `DATA.numRanks` is ignored because repurposed vanilla forms (e.g. Stealth) leave it stale.
+- **Player level requirements** — top-level `PERK` `GetLevel` conditions are written to `data/game/perk-player-level-reqs.json` (one entry per rank id).
 - **Position** — curated coordinates from `data/game/perks` (vendored in `lib/giga-planner-layout.json`; regenerate with `node tools/import/sync-giga-planner-layout.mjs`) when perk names match and no saved position exists; otherwise a prerequisite-depth layout with the same spacing conventions. Ranks of the same perk are laid out as one unit so they stay co-located. **Saved positions from the existing `data/game/perks/*.json` are restored after import** so manual layout edits survive rebuilds. Destiny keeps its config-based layout, with ids and effects preserved from the previous `destiny.json` when present.
 
 After metadata enrichment, **unanchored perks are removed** from each tree: nodes with no skill requirement, no prerequisites, no player-level requirement, not referenced as a prerequisite by any other perk, and **not** in that skill's merged `AVIF` tree. Starter nodes (e.g. Novice Destruction) are kept when other perks depend on them; leaf perks shown in `AVIF` (e.g. Gourmet, Metamagic) are kept even when they have no skill gate in plugin data.
@@ -110,10 +113,12 @@ After metadata enrichment, **unanchored perks are removed** from each tree: node
 
 - `data/game/mechanics.json`
 
-### Never overwritten
+### Imported with perks
 
-- `data/game/perk-player-level-reqs.json`
-- `data/game/race-effects.json`
+- `data/game/perk-player-level-reqs.json` — player level gates from `PERK` `GetLevel` conditions (one entry per rank id)
+- `data/game/race-effects.json` — structured effects parsed from race ability bonus text
+
+### Never overwritten
 - `data/game/stats.json`
 - `data/game/skills.json`
 - `data/game/character-options.json`
@@ -133,6 +138,7 @@ tools/import/
     avif-perk-tree.mjs     # AVIF perk tree parser (player-visible layout)
     avif-perk-membership.mjs # AVIF membership index + planner diff helpers
     deity-eligibility.mjs  # Wintersun deity follow rules from plugins + guide
+    deity-faith-from-plugins.mjs # Wintersun MGEF + worship MESG faith effect extraction
     destiny-config.mjs     # Subclasses of Skyrim destiny tree layout parser
     esp-reader.mjs         # Skyrim plugin record parser (single-pass batch scan)
     formid.mjs             # TES4 master list + plugin-local form ID → global identity
@@ -140,14 +146,16 @@ tools/import/
     giga-planner-layout.json # static legacy layout coordinates
     import-progress.mjs    # CLI progress reporting helpers
     import-reset.mjs       # empty perk shells, hand-tuned overrides, layout preservation, stale file cleanup
-    lorerim-install.mjs    # MO2 discovery, load order, plugin paths
+    lorerim-install.mjs    # MO2 discovery, loadorder.txt, plugin paths
     lorerim-transform.mjs  # plugin records → planner JSON
     lorerim-version.mjs    # modpack version from Wabbajack + install fingerprints
     parse-bonus-effects.mjs # bonus text → structured effects (rule-based)
     parse-trait-body.mjs    # trait spell text → description + bonus
     perk-import-filter.mjs # which plugin perks belong in planner trees
     perk-tree-metadata.mjs # skillReq / prerequisite enrichment from PERK records
+    plugin-classifier.mjs  # quick mechanics vs asset-only plugin detection
     plugin-io.mjs          # shared plugin visit/read helpers + concurrent mapper
+    plugin-skip-cache.mjs  # persistent skip list for non-mechanics plugins
     prune-orphan-perks.mjs # remove unanchored perk nodes after metadata enrichment
     skill-constants.mjs    # skill id ordering
     trait-ability-list.mjs # Biggie Traits FormList spell collection

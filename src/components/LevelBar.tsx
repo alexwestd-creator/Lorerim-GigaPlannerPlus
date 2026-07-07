@@ -1,8 +1,15 @@
-import { AlertCircle, ChevronsDown, ChevronsUp, Info, Minus, Plus } from "lucide-react";
-import type { ReactNode } from "react";
+import { AlertCircle, ChevronsDown, ChevronsUp, Minus, Plus, Wallet } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { NumericLevelInput } from "@/components/NumericLevelInput";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger, CursorTooltip } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  CursorTooltip,
+  InfoTooltipButton,
+} from "@/components/ui/tooltip";
 import {
   getBuildPlayerLevelWarnings,
   ensurePlayerLevelForBuild,
@@ -133,21 +140,178 @@ function BuildIssuesBanner({
 }
 
 function PointsInfoTooltip({ text }: { text: string }) {
+  return <InfoTooltipButton text={text} />;
+}
+
+function BudgetStatRow({
+  label,
+  remaining,
+  spentLabel,
+  spent,
+  info,
+  overBudget,
+  showInfoText = false,
+}: {
+  label: string;
+  remaining: number;
+  spentLabel: string;
+  spent: number;
+  info: string;
+  overBudget: boolean;
+  showInfoText?: boolean;
+}) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
-          aria-label={text}
-        >
-          <Info className="h-3 w-3" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" className="max-w-xs">
-        {text}
-      </TooltipContent>
-    </Tooltip>
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 space-y-1">
+        <p className="text-xs text-[var(--color-muted)]">{label}</p>
+        <p className="text-[11px] text-[var(--color-muted)]">
+          {spent} {spentLabel}
+        </p>
+        {showInfoText && (
+          <p className="text-[10px] leading-snug text-[var(--color-muted)]/90">{info}</p>
+        )}
+      </div>
+      <span className={remainingCountClassName(overBudget)}>{remaining}</span>
+    </div>
+  );
+}
+
+function MobileBudgetDropdown({
+  barLabels,
+  computed,
+  perkPointsInfo,
+  skillPointsInfo,
+  trainingLevelsInfo,
+  perkOverBudget,
+  skillOverBudget,
+  trainingOverBudget,
+}: {
+  barLabels: Record<string, string>;
+  computed: NonNullable<ReturnType<typeof useBuildStore.getState>["computed"]>;
+  perkPointsInfo: string;
+  skillPointsInfo: string;
+  trainingLevelsInfo: string;
+  perkOverBudget: boolean;
+  skillOverBudget: boolean;
+  trainingOverBudget: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; width: number } | null>(
+    null,
+  );
+  const hasIssue = perkOverBudget || skillOverBudget || trainingOverBudget;
+
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) {
+      setMenuPosition(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const rect = triggerRef.current.getBoundingClientRect();
+      const width = Math.min(288, window.innerWidth - 16);
+      const left = Math.min(
+        Math.max(8, rect.right - width),
+        window.innerWidth - width - 8,
+      );
+      setMenuPosition({
+        top: rect.bottom + 6,
+        left,
+        width,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  const menu =
+    open && menuPosition
+      ? createPortal(
+          <div
+            ref={menuRef}
+            role="dialog"
+            aria-label={barLabels.budgetSummaryTitle ?? "Build budget"}
+            className="fixed z-[90] space-y-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-3 shadow-[var(--shadow-panel)]"
+            style={{
+              top: menuPosition.top,
+              left: menuPosition.left,
+              width: menuPosition.width,
+            }}
+          >
+            <BudgetStatRow
+              label={barLabels.perkPointsRemaining}
+              remaining={computed.perkPointsRemaining}
+              spentLabel={barLabels.perkPointsSpent}
+              spent={computed.perkPointsSpent}
+              info={perkPointsInfo}
+              overBudget={perkOverBudget}
+              showInfoText
+            />
+            <BudgetStatRow
+              label={barLabels.trainingLevelsRemaining}
+              remaining={computed.trainingLevelsRemaining}
+              spentLabel={barLabels.trainingLevelsSpent}
+              spent={computed.trainingLevelsUsed}
+              info={trainingLevelsInfo}
+              overBudget={trainingOverBudget}
+              showInfoText
+            />
+            <BudgetStatRow
+              label={barLabels.skillPointsRemaining}
+              remaining={computed.skillPointsRemaining}
+              spentLabel={barLabels.skillPointsSpent}
+              spent={computed.skillPointsSpent}
+              info={skillPointsInfo}
+              overBudget={skillOverBudget}
+              showInfoText
+            />
+          </div>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <div className="md:hidden">
+      <Button
+        ref={triggerRef}
+        type="button"
+        variant="outline"
+        size="icon"
+        className={cn(
+          "h-9 w-9 border-[var(--color-border)] bg-[var(--color-surface-elevated)]/50",
+          hasIssue && "border-[var(--color-error)]/50 text-[var(--color-error)]",
+        )}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-label={barLabels.budgetSummaryTitle ?? "Build budget"}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <Wallet className="h-4 w-4" />
+      </Button>
+      {menu}
+    </div>
   );
 }
 
@@ -293,8 +457,8 @@ export function LevelBar() {
 
   return (
     <div className="shrink-0 border-b border-[var(--color-border)]/50 bg-[var(--color-surface)]/80 px-4 py-2 sm:px-6">
-      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-start sm:gap-3">
           <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-muted)]">
             {barLabels.playerLevel}
           </span>
@@ -302,7 +466,7 @@ export function LevelBar() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-9 w-9 md:h-7 md:w-7"
               onClick={() => setPlayerLevel(build.playerLevel - 1)}
               disabled={build.playerLevel <= baseLevel}
             >
@@ -317,7 +481,7 @@ export function LevelBar() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-9 w-9 md:h-7 md:w-7"
               onClick={() => setPlayerLevel(build.playerLevel + 1)}
               disabled={build.playerLevel >= maxPlayerLevel}
             >
@@ -340,10 +504,21 @@ export function LevelBar() {
           >
             <ChevronsDown className="h-3.5 w-3.5" />
           </LevelStepperTooltipButton>
+
+          <MobileBudgetDropdown
+            barLabels={barLabels}
+            computed={computed}
+            perkPointsInfo={perkPointsInfo}
+            skillPointsInfo={skillPointsInfo}
+            trainingLevelsInfo={trainingLevelsInfo}
+            perkOverBudget={perkOverBudget}
+            skillOverBudget={skillOverBudget}
+            trainingOverBudget={trainingOverBudget}
+          />
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="hidden items-center gap-3 text-xs md:flex md:flex-wrap">
+          <div className="flex shrink-0 items-center gap-x-2 whitespace-nowrap">
             <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)]">
               <span>{barLabels.perkPointsRemaining}:</span>
               <span className={remainingCountClassName(perkOverBudget)}>
@@ -356,7 +531,7 @@ export function LevelBar() {
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="flex shrink-0 items-center gap-x-2 whitespace-nowrap">
             <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)]">
               <span>{barLabels.trainingLevelsRemaining}:</span>
               <span className={remainingCountClassName(trainingOverBudget)}>
@@ -369,7 +544,7 @@ export function LevelBar() {
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="flex shrink-0 items-center gap-x-2 whitespace-nowrap">
             <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)]">
               <span>{barLabels.skillPointsRemaining}:</span>
               <span className={remainingCountClassName(skillOverBudget)}>

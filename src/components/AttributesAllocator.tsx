@@ -6,6 +6,7 @@ import {
   getRemainingAttributePoints,
   type Attributes,
 } from "@/engine/buildEngine";
+import { usePlannerStackedLayout } from "@/layout/plannerLayout";
 import { cn } from "@/lib/utils";
 import { usePanelLabels } from "@/theme/ThemeProvider";
 import { useBuildStore } from "@/store/buildStore";
@@ -18,8 +19,11 @@ const ATTRIBUTE_COLORS = {
 
 const ATTRIBUTE_KEYS: (keyof Attributes)[] = ["health", "magicka", "stamina"];
 
+type ControlSize = "compact" | "default" | "touch";
+
 interface AttributesAllocatorProps {
   embedded?: boolean;
+  compact?: boolean;
 }
 
 interface AttributeRowProps {
@@ -29,8 +33,75 @@ interface AttributeRowProps {
   choices: number;
   pointsPerChoice: number;
   maxChoices: number;
+  compact?: boolean;
+  mobile?: boolean;
   onAdjust: (delta: number) => void;
   onSetChoices: (choices: number) => void;
+}
+
+function AttributeControls({
+  label,
+  choices,
+  maxChoices,
+  size = "default",
+  onAdjust,
+  onSetChoices,
+}: {
+  label: string;
+  choices: number;
+  maxChoices: number;
+  size?: ControlSize;
+  onAdjust: (delta: number) => void;
+  onSetChoices: (choices: number) => void;
+}) {
+  const buttonClass =
+    size === "touch" ? "h-9 w-9" : size === "compact" ? "h-5 w-5" : "h-6 w-6";
+  const iconClass =
+    size === "touch" ? "h-4 w-4" : size === "compact" ? "h-2.5 w-2.5" : "h-3 w-3";
+  const inputSize = size === "touch" ? "touch" : size === "compact" ? "compact" : "default";
+
+  return (
+    <div
+      className={cn(
+        "inline-flex shrink-0 items-center rounded-[var(--radius-md)] border border-[var(--color-border)]/70 bg-[var(--color-background)]/55",
+        size === "touch" ? "p-0.5" : "p-px",
+      )}
+    >
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          "text-[var(--color-muted)] hover:text-[var(--color-foreground)]",
+          buttonClass,
+        )}
+        onClick={() => onAdjust(-1)}
+        disabled={choices <= 0}
+        aria-label={`Remove ${label} choice`}
+      >
+        <Minus className={iconClass} />
+      </Button>
+      <NumericLevelInput
+        value={choices}
+        min={0}
+        max={maxChoices}
+        size={inputSize}
+        onCommit={onSetChoices}
+      />
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          "text-[var(--color-muted)] hover:text-[var(--color-foreground)]",
+          buttonClass,
+        )}
+        onClick={() => onAdjust(1)}
+        disabled={choices >= maxChoices}
+        aria-label={`Add ${label} choice`}
+      >
+        <Plus className={iconClass} />
+      </Button>
+    </div>
+  );
 }
 
 function AttributeRow({
@@ -40,11 +111,95 @@ function AttributeRow({
   choices,
   pointsPerChoice,
   maxChoices,
+  compact = false,
+  mobile = false,
   onAdjust,
   onSetChoices,
 }: AttributeRowProps) {
   const color = ATTRIBUTE_COLORS[stat];
   const bonus = choices * pointsPerChoice;
+
+  if (mobile) {
+    return (
+      <div className="relative flex min-h-12 items-center gap-3 py-2.5">
+        <div
+          className="absolute inset-y-2 left-0 w-0.5 rounded-full"
+          style={{ backgroundColor: color }}
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1 pl-2.5">
+          <div className="text-sm font-semibold leading-tight" style={{ color }}>
+            {label}
+          </div>
+          <div
+            className={cn(
+              "mt-0.5 text-xs tabular-nums",
+              choices > 0 ? "text-[var(--color-muted)]" : "text-[var(--color-muted)]/70",
+            )}
+          >
+            {choices > 0 ? `+${bonus}` : "—"}
+          </div>
+        </div>
+        <span
+          className="shrink-0 font-mono text-lg font-bold tabular-nums leading-none"
+          style={{ color }}
+        >
+          {value}
+        </span>
+        <AttributeControls
+          label={label}
+          choices={choices}
+          maxChoices={maxChoices}
+          size="touch"
+          onAdjust={onAdjust}
+          onSetChoices={onSetChoices}
+        />
+      </div>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className="relative px-2 py-1.5">
+        <div
+          className="absolute inset-y-1.5 left-0 w-0.5 rounded-full"
+          style={{ backgroundColor: color }}
+          aria-hidden
+        />
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 pl-2">
+          <div className="min-w-0">
+            <div
+              className="text-[10px] font-semibold leading-tight [overflow-wrap:anywhere]"
+              style={{ color }}
+            >
+              {label}
+            </div>
+            {choices > 0 ? (
+              <div className="mt-0.5 text-[9px] tabular-nums text-[var(--color-muted)]">+{bonus}</div>
+            ) : (
+              <div className="mt-0.5 text-[9px] text-[var(--color-muted)]/70">—</div>
+            )}
+          </div>
+          <span
+            className="shrink-0 font-mono text-sm font-semibold tabular-nums leading-none"
+            style={{ color }}
+          >
+            {value}
+          </span>
+        </div>
+        <div className="mt-1.5 flex justify-end pl-2">
+          <AttributeControls
+            label={label}
+            choices={choices}
+            maxChoices={maxChoices}
+            size="compact"
+            onAdjust={onAdjust}
+            onSetChoices={onSetChoices}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex items-center gap-2 px-2.5 py-2">
@@ -58,9 +213,7 @@ function AttributeRow({
           {label}
         </div>
         {choices > 0 ? (
-          <div className="mt-1 text-[10px] tabular-nums text-[var(--color-muted)]">
-            +{bonus}
-          </div>
+          <div className="mt-1 text-[10px] tabular-nums text-[var(--color-muted)]">+{bonus}</div>
         ) : (
           <div className="mt-1 text-[10px] text-[var(--color-muted)]/70">—</div>
         )}
@@ -71,47 +224,29 @@ function AttributeRow({
       >
         {value}
       </span>
-      <div className="inline-flex shrink-0 items-center rounded-[var(--radius-md)] border border-[var(--color-border)]/70 bg-[var(--color-background)]/55 p-px">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-5 w-5 text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
-          onClick={() => onAdjust(-1)}
-          disabled={choices <= 0}
-          aria-label={`Remove ${label} choice`}
-        >
-          <Minus className="h-2.5 w-2.5" />
-        </Button>
-        <NumericLevelInput
-          value={choices}
-          min={0}
-          max={maxChoices}
-          size="compact"
-          onCommit={onSetChoices}
-        />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-5 w-5 text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
-          onClick={() => onAdjust(1)}
-          disabled={choices >= maxChoices}
-          aria-label={`Add ${label} choice`}
-        >
-          <Plus className="h-2.5 w-2.5" />
-        </Button>
-      </div>
+      <AttributeControls
+        label={label}
+        choices={choices}
+        maxChoices={maxChoices}
+        onAdjust={onAdjust}
+        onSetChoices={onSetChoices}
+      />
     </div>
   );
 }
 
-export function AttributesAllocator({ embedded = false }: AttributesAllocatorProps) {
+export function AttributesAllocator({ embedded = false, compact = false }: AttributesAllocatorProps) {
   const labels = usePanelLabels("attributes");
+  const stackedLayout = usePlannerStackedLayout();
   const gameData = useBuildStore((s) => s.gameData);
   const build = useBuildStore((s) => s.build);
   const computed = useBuildStore((s) => s.computed);
   const adjustAttribute = useBuildStore((s) => s.adjustAttribute);
 
   if (!gameData || !computed) return null;
+
+  const mobile = stackedLayout;
+  const showCompact = compact && !mobile;
 
   const { game } = gameData;
   const remaining = getRemainingAttributePoints(game, build);
@@ -125,32 +260,40 @@ export function AttributesAllocator({ embedded = false }: AttributesAllocatorPro
   }));
 
   return (
-    <div className={cn(embedded ? "space-y-2" : "space-y-3")}>
-      <div className="flex items-center justify-between gap-2 px-0.5">
+    <div className={cn(mobile ? "space-y-2" : showCompact || embedded ? "space-y-2" : "space-y-3")}>
+      <div className="flex items-center justify-between gap-3">
         {!embedded && (
           <span className="text-sm font-medium text-[var(--color-foreground)]">{labels.title}</span>
         )}
         {embedded && (
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)]">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted)] [overflow-wrap:anywhere]">
             {labels.title}
           </span>
         )}
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "rounded-full border bg-[var(--color-background)]/60 tabular-nums",
-              embedded ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-xs",
-              overBudget
-                ? "border-[var(--color-error)]/40 text-[var(--color-error)]"
-                : "border-[var(--color-border)]/50 text-[var(--color-muted)]",
-            )}
-          >
-            {remaining} {labels.remainingShort ?? "left"}
-          </span>
-        </div>
+        <span
+          className={cn(
+            "shrink-0 rounded-full border bg-[var(--color-background)]/60 tabular-nums",
+            mobile
+              ? "px-2.5 py-1 text-xs font-medium"
+              : showCompact || embedded
+                ? "px-1.5 py-0.5 text-[10px]"
+                : "px-2 py-0.5 text-xs",
+            overBudget
+              ? "border-[var(--color-error)]/40 text-[var(--color-error)]"
+              : "border-[var(--color-border)]/50 text-[var(--color-muted)]",
+          )}
+        >
+          {remaining} {labels.remainingShort ?? "left"}
+        </span>
       </div>
 
-      <div className="divide-y divide-[var(--color-border)]/50 overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)]/70 bg-[var(--color-surface-elevated)]/35">
+      <div
+        className={cn(
+          mobile
+            ? "divide-y divide-[var(--color-border)]/50"
+            : "divide-y divide-[var(--color-border)]/50 overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)]/70 bg-[var(--color-surface-elevated)]/35",
+        )}
+      >
         {attrs.map(({ key, label, value, choices, pointsPerChoice }) => (
           <AttributeRow
             key={key}
@@ -160,6 +303,8 @@ export function AttributesAllocator({ embedded = false }: AttributesAllocatorPro
             choices={choices}
             pointsPerChoice={pointsPerChoice}
             maxChoices={choices + remaining}
+            compact={showCompact}
+            mobile={mobile}
             onAdjust={(delta) => adjustAttribute(key, delta)}
             onSetChoices={(next) => adjustAttribute(key, next - choices)}
           />

@@ -55,7 +55,9 @@ html,
 body,
 #root {
   height: 100%;
+  min-height: 100dvh;
   margin: 0;
+  overscroll-behavior-x: none;
 }
 
 body {
@@ -64,6 +66,15 @@ body {
   color: var(--color-foreground, #e8eaef);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@media (pointer: coarse) {
+  html,
+  body,
+  #root {
+    /* Limit document-level horizontal pans that trigger browser back/forward swipes. */
+    touch-action: pan-y pinch-zoom;
+  }
 }
 
 .app-shell {
@@ -99,6 +110,17 @@ button {
   overflow: visible;
 }
 
-.picker-list-scroll > [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
-  right: -0.375rem;
+.page-scroll-with-fab {
+  padding-bottom: max(5rem, calc(3.5rem + env(safe-area-inset-bottom)));
+}
+
+.planner-swipe-pane {
+  padding-bottom: 0.5rem;
+}
+
+@media (pointer: coarse) {
+  .touch-target {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
 }

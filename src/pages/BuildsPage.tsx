@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { PickerSearchInput, matchesPickerSearch } from "@/components/PickerSearchInput";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { BugReportButton } from "@/components/BugReportButton";
 import type { GameData } from "@/data/schemas";
 import {
   decodeBuildPackage,
@@ -47,7 +48,8 @@ import {
   normalizeSavedBuild,
   updateSavedBuildInList,
 } from "@/store/savedBuilds";
-import { BugReportButton } from "@/components/BugReportButton";
+
+type MobileBuildsTab = "builds" | "transfer";
 
 function formatUpdatedAt(timestamp: number): string {
   return new Date(timestamp).toLocaleString(undefined, {
@@ -101,7 +103,7 @@ function BuildAction({ label, onClick, disabled, destructive, children }: BuildA
             variant="ghost"
             size="icon"
             className={cn(
-              "h-8 w-8",
+              "h-9 w-9",
               destructive && "text-[var(--color-error)] hover:text-[var(--color-error)]",
             )}
             disabled={disabled}
@@ -109,6 +111,7 @@ function BuildAction({ label, onClick, disabled, destructive, children }: BuildA
               stopPropagation(event);
               onClick();
             }}
+            aria-label={label}
           >
             {children}
           </Button>
@@ -220,7 +223,7 @@ function ActiveBuildCodeBlock({
             : "border-[var(--color-border)] bg-[var(--color-surface-elevated)]/60 hover:border-[var(--color-accent-muted)]",
         )}
       >
-        <code className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs text-[var(--color-accent)]">
+        <code className="min-w-0 flex-1 break-all font-mono text-xs text-[var(--color-accent)] sm:break-normal sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap">
           {code}
         </code>
         {copiedAction === "code" ? (
@@ -309,8 +312,8 @@ function TransferSidebar({
   const fileFeedback = importFeedback?.context === "file" ? importFeedback : null;
 
   return (
-    <div className="space-y-3">
-      <Card>
+    <div className="min-w-0 space-y-3">
+      <Card className="min-w-0 overflow-hidden">
         <PanelHeader
           icon={Link2}
           title={labels.shareCodeTitle}
@@ -345,7 +348,7 @@ function TransferSidebar({
                 )}
               />
               <div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -369,7 +372,7 @@ function TransferSidebar({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="min-w-0 overflow-hidden">
         <PanelHeader
           icon={Archive}
           title={labels.backupTitle}
@@ -589,13 +592,12 @@ function SavedBuildCard({
       }}
       role={isActive ? undefined : "button"}
       tabIndex={isActive ? undefined : 0}
-      aria-label={canReorder ? labels.dragToReorder : undefined}
       className={cn(
-        "relative flex items-center gap-2 transition-all",
+        "relative flex items-center gap-2 pl-3 transition-all",
         isDragging && "opacity-40",
         isDragOver && "z-10 ring-1 ring-inset ring-[var(--color-accent)]/50",
         isActive && "bg-[var(--color-accent)]/[0.04]",
-        canReorder && "cursor-grab active:cursor-grabbing",
+        canReorder && "cursor-grab active:cursor-grabbing lg:pl-0",
         !isActive && !isDragging && "hover:bg-[var(--color-surface-elevated)]/80",
       )}
     >
@@ -606,18 +608,20 @@ function SavedBuildCard({
       <div
         className={cn(
           "flex shrink-0 touch-none items-center px-2 text-[var(--color-muted)]",
-          canReorder ? "cursor-grab active:cursor-grabbing" : "opacity-30",
+          canReorder ? "cursor-grab active:cursor-grabbing max-lg:hidden" : "hidden",
         )}
         aria-hidden
       >
         <GripVertical className="h-4 w-4" />
       </div>
 
-      <div className="min-w-0 flex-1 py-3 pr-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h4 className="truncate text-sm font-semibold text-[var(--color-foreground)]">{entry.name}</h4>
+      <div className="min-w-0 flex-1 py-3 pr-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <h4 className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-foreground)]">
+            {entry.name}
+          </h4>
           {isActive && (
-            <span className="rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-accent)]">
+            <span className="shrink-0 whitespace-nowrap rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-accent)]">
               {labels.activeBadge}
             </span>
           )}
@@ -667,6 +671,7 @@ export function BuildsPage() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [activeCodeCopied, setActiveCodeCopied] = useState<"code" | "link" | null>(null);
   const [buildSearchQuery, setBuildSearchQuery] = useState("");
+  const [mobileTab, setMobileTab] = useState<MobileBuildsTab>("builds");
 
   const visibleBuilds = useMemo(() => {
     if (!gameData) return [];
@@ -809,20 +814,25 @@ export function BuildsPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-4 overflow-y-auto px-4 py-5 sm:px-6 lg:gap-5 lg:overflow-hidden lg:py-4">
-      <header className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+    <div
+      className={cn(
+        "page-scroll-with-fab mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-5 sm:px-6 lg:gap-5 lg:overflow-hidden lg:py-4",
+        mobileTab === "transfer" ? "max-lg:overflow-hidden" : "overflow-y-auto",
+      )}
+    >
+      <header className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
           <p className="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-[var(--color-accent-muted)]">
             {labels.eyebrow}
           </p>
-          <h1 className="font-[family-name:var(--font-heading)] text-3xl font-bold tracking-wide text-[var(--color-foreground)]">
+          <h1 className="font-[family-name:var(--font-heading)] text-2xl font-bold tracking-wide text-[var(--color-foreground)] sm:text-3xl">
             {labels.title}
           </h1>
           <p className="mt-1.5 text-sm text-[var(--color-muted)]">
-            {formatLabel(labels.buildCount, { count: savedBuilds.length })} · {labels.autoSaveHint}
+            {formatLabel(labels.buildCount, { count: savedBuilds.length })}
           </p>
         </div>
-        <Button asChild variant="outline" className="shrink-0 self-start">
+        <Button asChild variant="outline" className="w-full shrink-0 sm:w-auto sm:self-start">
           <Link to="/planner">
             {labels.openPlanner}
             <ArrowRight className="h-4 w-4" />
@@ -830,16 +840,49 @@ export function BuildsPage() {
         </Button>
       </header>
 
-      <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:overflow-hidden">
-        <section className="flex min-h-0 min-w-0 flex-col gap-3 lg:h-full lg:overflow-hidden">
-          <div className="flex shrink-0 items-center justify-between gap-3">
-            <h2 className="font-[family-name:var(--font-heading)] text-base font-semibold text-[var(--color-accent)]">
+      <div
+        className={cn(
+          "flex flex-col gap-3",
+          mobileTab === "transfer" && "min-h-0 flex-1 overflow-hidden max-lg:overflow-hidden",
+          "lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-stretch lg:gap-6 lg:overflow-hidden",
+        )}
+      >
+        <div className="inline-flex w-full shrink-0 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-elevated)]/50 p-0.5 lg:hidden">
+          <Button
+            type="button"
+            variant={mobileTab === "transfer" ? "ghost" : "default"}
+            size="sm"
+            className="h-7 flex-1 px-2.5 text-[10px] font-medium"
+            onClick={() => setMobileTab("builds")}
+          >
+            {labels.savedBuildsTitle}
+          </Button>
+          <Button
+            type="button"
+            variant={mobileTab === "transfer" ? "default" : "ghost"}
+            size="sm"
+            className="h-7 flex-1 px-2.5 text-[10px] font-medium"
+            onClick={() => setMobileTab("transfer")}
+          >
+            {labels.shareCodeTitle}
+          </Button>
+        </div>
+
+        <section
+          className={cn(
+            "flex min-w-0 flex-col gap-3",
+            mobileTab !== "builds" && "hidden lg:flex",
+            "lg:min-h-0 lg:h-full lg:overflow-hidden",
+          )}
+        >
+          <div className="flex shrink-0 items-center justify-end gap-3 lg:justify-between">
+            <h2 className="hidden font-[family-name:var(--font-heading)] text-base font-semibold text-[var(--color-accent)] lg:block">
               {labels.savedBuildsTitle}
             </h2>
             <Button
               variant="outline"
               size="sm"
-              className="h-7 shrink-0 gap-1.5 px-2.5 text-xs border-[var(--color-border)] bg-[var(--color-surface-elevated)]/50 hover:border-[var(--color-accent-muted)] hover:bg-[var(--color-surface-elevated)]"
+              className="h-8 shrink-0 gap-1.5 px-2.5 text-xs border-[var(--color-border)] bg-[var(--color-surface-elevated)]/50 hover:border-[var(--color-accent-muted)] hover:bg-[var(--color-surface-elevated)]"
               onClick={() => createSavedBuildSlot()}
             >
               <Plus className="h-3 w-3 text-[var(--color-accent)]" />
@@ -853,7 +896,7 @@ export function BuildsPage() {
             placeholder={labels.searchBuilds}
           />
 
-          <div className="min-h-0 flex-1 overflow-y-auto pr-1 max-lg:max-h-[calc(100dvh-20rem)]">
+          <div className="overflow-y-auto lg:min-h-0 lg:flex-1 lg:pr-1">
             {visibleBuilds.length === 0 ? (
               <p className="px-1 py-6 text-center text-sm text-[var(--color-muted)]">
                 {labels.noSearchResults}
@@ -891,7 +934,13 @@ export function BuildsPage() {
           </div>
         </section>
 
-        <aside className="shrink-0">
+        <aside
+          className={cn(
+            "min-h-0 min-w-0 overflow-y-auto overscroll-y-contain pr-1",
+            mobileTab !== "transfer" && "hidden lg:block",
+            mobileTab === "transfer" && "flex-1 lg:flex-none",
+          )}
+        >
           <TransferSidebar
             labels={labels}
             activeBuildName={activeBuild?.name}

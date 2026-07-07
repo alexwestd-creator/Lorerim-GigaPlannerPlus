@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Check } from "lucide-react";
+import { MobileSingleSelectPickerView } from "@/components/picker/MobileSingleSelectPickerView";
 import {
   PickerDetailPanel,
   PickerListItem,
   PickerListPanel,
 } from "@/components/picker/PickerListItem";
 import { PickerSearchInput, matchesPickerSearch } from "@/components/PickerSearchInput";
-import { ScrollArea } from "@/components/ui/scroll-area";export interface SingleSelectOption {
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { usePlannerCompactUI, usePlannerStackedLayout } from "@/layout/plannerLayout";
+
+export interface SingleSelectOption {
   id: string;
   name: string;
   isSelected: boolean;
@@ -23,6 +28,9 @@ interface SingleSelectPickerViewProps {
   searchPlaceholder?: string;
   noMatchesLabel?: string;
   selectedLabel?: string;
+  backToListLabel?: string;
+  /** On touch layouts, use full-screen list/detail flow instead of split panes. */
+  touchPreviewSelect?: boolean;
 }
 
 export function SingleSelectPickerView({
@@ -32,7 +40,14 @@ export function SingleSelectPickerView({
   searchPlaceholder = "Search...",
   noMatchesLabel = "No matches",
   selectedLabel = "Selected",
+  backToListLabel = "Options",
+  touchPreviewSelect = false,
 }: SingleSelectPickerViewProps) {
+  const stackedLayout = usePlannerStackedLayout();
+  const compactUI = usePlannerCompactUI();
+  const sideBySide = !compactUI;
+  const useMobileFlow = stackedLayout && touchPreviewSelect;
+
   const [query, setQuery] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(
     selectedId ?? options[0]?.id ?? null,
@@ -58,16 +73,43 @@ export function SingleSelectPickerView({
   const previewOption =
     filteredOptions.find((option) => option.id === previewId) ?? filteredOptions[0];
 
+  if (useMobileFlow) {
+    return (
+      <MobileSingleSelectPickerView
+        options={options}
+        selectedId={selectedId}
+        emptyDetail={emptyDetail}
+        searchPlaceholder={searchPlaceholder}
+        noMatchesLabel={noMatchesLabel}
+        selectedLabel={selectedLabel}
+        backToListLabel={backToListLabel}
+      />
+    );
+  }
+
   return (
-    <div className="flex min-h-0 flex-1 gap-3">
-      <PickerListPanel className="h-full w-[11.5rem] shrink-0 sm:w-52">
+    <div
+      className={cn(
+        "flex min-h-0 flex-1 gap-3",
+        sideBySide ? "flex-row" : "flex-col",
+        stackedLayout && !sideBySide && "gap-2",
+      )}
+    >
+      <PickerListPanel
+        className={cn(
+          "min-h-0 w-full shrink-0",
+          sideBySide ? "h-full w-52 max-w-[45%]" : "flex-[0_0_42%]",
+          stackedLayout && !sideBySide && "flex-1",
+        )}
+      >
         <PickerSearchInput
           value={query}
           onChange={setQuery}
           placeholder={searchPlaceholder}
         />
         <ScrollArea className="picker-list-scroll min-h-0 flex-1">
-          <div className="space-y-0.5">            {filteredOptions.length === 0 ? (
+          <div className="space-y-1">
+            {filteredOptions.length === 0 ? (
               <p className="px-2 py-3 text-center text-xs text-[var(--color-muted)]">
                 {noMatchesLabel}
               </p>
@@ -88,11 +130,11 @@ export function SingleSelectPickerView({
           </div>
         </ScrollArea>
       </PickerListPanel>
-      <PickerDetailPanel>
+      <PickerDetailPanel className={cn(stackedLayout && !sideBySide && "min-h-0 flex-1")}>
         {previewOption ? (
           <>
             <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--color-border)]/70 px-4 py-3">
-              <h3 className="min-w-0 truncate font-[family-name:var(--font-heading)] text-base font-semibold text-[var(--color-accent)]">
+              <h3 className="min-w-0 font-[family-name:var(--font-heading)] text-base font-semibold text-[var(--color-accent)] [overflow-wrap:anywhere]">
                 {previewOption.name}
               </h3>
               {previewOption.isSelected && (

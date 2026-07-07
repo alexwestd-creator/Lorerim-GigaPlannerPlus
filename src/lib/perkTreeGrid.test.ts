@@ -3,10 +3,13 @@ import type { Perk, PerkTree } from "@/data/schemas";
 import {
   computePerkTreeEdges,
   getFrontPerkIdAtPosition,
+  getMinDistinctPerkCenterDistanceGrid,
   getNextRankInStack,
   getPerkStackRank,
   getPerkTreeGridBounds,
   parseSvgViewBox,
+  resolvePerkNodeDiameterPx,
+  resolvePerkTakeTarget,
   sortPerkStack,
 } from "@/lib/perkTreeGrid";
 
@@ -64,7 +67,23 @@ describe("perkTreeGrid", () => {
   it("picks the front perk as the next unselected tier", () => {
     const stack = [makePerk("rank-50", 50), makePerk("rank-25", 25)];
     expect(getFrontPerkIdAtPosition(stack, [])).toBe("rank-25");
+    expect(getFrontPerkIdAtPosition(stack, ["rank-25"])).toBe("rank-50");
     expect(getFrontPerkIdAtPosition(stack, ["rank-25", "rank-50"])).toBe("rank-50");
+  });
+
+  it("orders level-gated stacks by player level then rank suffix", () => {
+    const stack = [
+      { ...makePerk("alchemy-herbalist-r2", 0), playerLevelReq: 20 },
+      { ...makePerk("alchemy-herbalist", 0), playerLevelReq: 10 },
+    ];
+
+    expect(sortPerkStack(stack).map((perk) => perk.id)).toEqual([
+      "alchemy-herbalist",
+      "alchemy-herbalist-r2",
+    ]);
+    expect(getFrontPerkIdAtPosition(stack, [])).toBe("alchemy-herbalist");
+    expect(getFrontPerkIdAtPosition(stack, ["alchemy-herbalist"])).toBe("alchemy-herbalist-r2");
+    expect(getNextRankInStack(stack, ["alchemy-herbalist"])?.id).toBe("alchemy-herbalist-r2");
   });
 
   it("parses SVG view boxes", () => {
@@ -93,5 +112,39 @@ describe("perkTreeGrid", () => {
     expect(edges).toHaveLength(2);
     expect(edges.find((edge) => edge.kind === "all")).toBeDefined();
     expect(edges.find((edge) => edge.kind === "any")).toBeDefined();
+  });
+
+  it("measures the shortest distance between distinct perk positions", () => {
+    const perks = [
+      makePerk("a", 0),
+      { ...makePerk("b", 0), position: { x: 2, y: 1 } },
+      { ...makePerk("c", 0), position: { x: 2, y: 2 } },
+    ];
+
+    expect(getMinDistinctPerkCenterDistanceGrid(perks)).toBe(1);
+  });
+
+  it("shrinks node diameter only when adjacent perks would overlap", () => {
+    const adjacentPerks = [makePerk("a", 0), { ...makePerk("b", 0), position: { x: 2, y: 1 } }];
+
+    expect(resolvePerkNodeDiameterPx(30, getMinDistinctPerkCenterDistanceGrid(adjacentPerks))).toBe(
+      30,
+    );
+    expect(resolvePerkNodeDiameterPx(30, Number.POSITIVE_INFINITY)).toBe(32);
+  });
+
+  it("resolves click target to the next rank when the visible tier is owned", () => {
+    const stack = [makePerk("rank-25", 25), makePerk("rank-50", 50), makePerk("rank-75", 75)];
+
+    expect(resolvePerkTakeTarget(stack, [])).toBe("rank-25");
+    expect(resolvePerkTakeTarget(stack, ["rank-25"])).toBe("rank-50");
+    expect(resolvePerkTakeTarget(stack, ["rank-25", "rank-50"])).toBe("rank-75");
+    expect(resolvePerkTakeTarget(stack, ["rank-25", "rank-50", "rank-75"])).toBe("rank-75");
+  });
+
+  it("resolves click target to the front perk for single-rank nodes", () => {
+    const stack = [makePerk("solo", 0)];
+    expect(resolvePerkTakeTarget(stack, [])).toBe("solo");
+    expect(resolvePerkTakeTarget(stack, ["solo"])).toBe("solo");
   });
 });

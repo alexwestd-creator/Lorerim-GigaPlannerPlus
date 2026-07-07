@@ -1,6 +1,7 @@
 import { Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 const BUG_REPORT_URL = "https://github.com/watchis/Lorerim-GigaPlannerPlus/issues/new/choose";
 
@@ -11,7 +12,10 @@ export function BugReportButton() {
         <Button
           variant="outline"
           size="icon"
-          className="fixed bottom-4 right-4 z-30 h-12 w-12 rounded-full border-[var(--color-border)] bg-[var(--color-surface)]/90 shadow-[var(--shadow-panel)] backdrop-blur-sm hover:bg-[var(--color-surface-elevated)]"
+          className={cn(
+            "fixed z-30 hidden h-12 w-12 rounded-full border-[var(--color-border)] bg-[var(--color-surface)]/90 shadow-[var(--shadow-panel)] backdrop-blur-sm hover:bg-[var(--color-surface-elevated)] md:inline-flex",
+            "bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))]",
+          )}
           asChild
         >
           <a

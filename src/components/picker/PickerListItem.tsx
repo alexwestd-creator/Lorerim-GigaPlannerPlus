@@ -9,7 +9,10 @@ interface PickerListItemProps {
   isEnabled?: boolean;
   onSelect: () => void;
   onPreview?: () => void;
+  /** When true, row tap previews instead of selecting (touch layouts). */
+  touchPreviewOnly?: boolean;
   leading?: ReactNode;
+  trailing?: ReactNode;
 }
 
 export function PickerListItem({
@@ -19,17 +22,27 @@ export function PickerListItem({
   isEnabled = true,
   onSelect,
   onPreview,
+  touchPreviewOnly = false,
   leading,
+  trailing,
 }: PickerListItemProps) {
+  const handleClick = () => {
+    if (touchPreviewOnly && onPreview) {
+      onPreview();
+      return;
+    }
+    onSelect();
+  };
+
   return (
     <button
       type="button"
       disabled={!isEnabled && !isSelected}
-      onMouseEnter={onPreview}
-      onFocus={onPreview}
-      onClick={onSelect}
+      onMouseEnter={touchPreviewOnly ? undefined : onPreview}
+      onFocus={touchPreviewOnly ? undefined : onPreview}
+      onClick={handleClick}
       className={cn(
-        "flex w-full min-w-0 max-w-full items-center gap-2 rounded-[var(--radius-md)] border px-2.5 py-2 text-left transition-colors",
+        "flex w-full min-w-0 max-w-full items-center gap-2 rounded-[var(--radius-md)] border px-3 py-2.5 text-left transition-colors max-md:min-h-12",
         isSelected
           ? "border-[var(--color-accent)]/35 bg-[var(--color-accent)]/8"
           : isPreview
@@ -47,7 +60,7 @@ export function PickerListItem({
       >
         {name}
       </span>
-      {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" />}
+      {trailing ?? (isSelected ? <Check className="h-3.5 w-3.5 shrink-0 text-[var(--color-accent)]" /> : null)}
     </button>
   );
 }
@@ -73,7 +86,7 @@ export function PickerOptionTile({
       disabled={!isEnabled && !isSelected}
       onClick={onSelect}
       className={cn(
-        "flex items-center gap-2 rounded-[var(--radius-md)] border px-2.5 py-2 text-left transition-colors",
+        "flex items-center gap-2 rounded-[var(--radius-md)] border px-3 py-2.5 text-left transition-colors max-md:min-h-12",
         isSelected
           ? "border-[var(--color-accent)]/40 bg-[var(--color-accent)]/8"
           : isEnabled
