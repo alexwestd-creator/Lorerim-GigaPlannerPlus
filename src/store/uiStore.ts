@@ -32,6 +32,10 @@ interface UiStore {
   setupPicker: SetupPicker | null;
   characterOptionsOpen: boolean;
   variantsManagerOpen: boolean;
+  variantsManagerInitialPane: "manage" | "notes";
+  variantsManagerInitialVariantId: string | null;
+  variantNotesRequestId: number;
+  variantsManagerRequestId: number;
   middleView: MiddleWorkspaceView;
   activeSkillTreeId: string | null;
   skillWorkspaceMode: SkillWorkspaceMode;
@@ -42,6 +46,7 @@ interface UiStore {
   closeCharacterOptions: () => void;
   toggleCharacterOptions: () => void;
   openVariantsManager: () => void;
+  openVariantNotes: (variantId: string | null) => void;
   closeVariantsManager: () => void;
   setMiddleView: (view: MiddleWorkspaceView) => void;
   setActiveSkillTreeId: (skillId: string | null) => void;
@@ -55,10 +60,23 @@ function getDefaultShowPerkSkillRequirements(): boolean {
   return window.innerWidth >= STACKED_LAYOUT_MAX_WIDTH;
 }
 
+function scrollMiddleWorkspaceIntoView(): void {
+  requestAnimationFrame(() => {
+    document.getElementById("middle-workspace")?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  });
+}
+
 export const useUiStore = create<UiStore>((set, get) => ({
   setupPicker: null,
   characterOptionsOpen: false,
   variantsManagerOpen: false,
+  variantsManagerInitialPane: "manage",
+  variantsManagerInitialVariantId: null,
+  variantNotesRequestId: 0,
+  variantsManagerRequestId: 0,
   middleView: "character-info",
   activeSkillTreeId: null,
   skillWorkspaceMode: "perks",
@@ -96,19 +114,35 @@ export const useUiStore = create<UiStore>((set, get) => ({
     });
   },
   openVariantsManager: () => {
-    set({
+    set((state) => ({
       variantsManagerOpen: true,
       setupPicker: null,
       characterOptionsOpen: false,
-    });
-    requestAnimationFrame(() => {
-      document.getElementById("middle-workspace")?.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
-    });
+      variantsManagerInitialPane: "manage",
+      variantsManagerInitialVariantId: null,
+      variantsManagerRequestId: state.variantsManagerRequestId + 1,
+    }));
+    scrollMiddleWorkspaceIntoView();
   },
-  closeVariantsManager: () => set({ variantsManagerOpen: false }),
+  openVariantNotes: (variantId) => {
+    set((state) => ({
+      variantsManagerOpen: true,
+      setupPicker: null,
+      characterOptionsOpen: false,
+      variantsManagerInitialPane: "notes",
+      variantsManagerInitialVariantId: variantId,
+      variantNotesRequestId: state.variantNotesRequestId + 1,
+    }));
+    scrollMiddleWorkspaceIntoView();
+  },
+  closeVariantsManager: () =>
+    set({
+      variantsManagerOpen: false,
+      variantsManagerInitialPane: "manage",
+      variantsManagerInitialVariantId: null,
+      variantNotesRequestId: 0,
+      variantsManagerRequestId: 0,
+    }),
   setMiddleView: (view) =>
     set({
       middleView: view,
