@@ -21,9 +21,13 @@ import {
   getSkillFloor,
   getSkillLevelFromTraining,
   getStoredSkillLevel,
+  getStoredSkillTraining,
   isSkillOverPlayerLevelCap,
 } from "@/engine/buildEngine";
 import { cn } from "@/lib/utils";
+import {
+  getMobileSkillTreeTitleClassName,
+} from "@/lib/skillTreePanelTitle";
 import { useUiStore } from "@/store/uiStore";
 import { usePanelLabels } from "@/theme/ThemeProvider";
 import { useBuildStore } from "@/store/buildStore";
@@ -72,6 +76,32 @@ function SkillTreeWarningIcon({
       >
         <AlertCircle className="h-4 w-4" />
       </button>
+    </HoverTapTooltip>
+  );
+}
+
+function SkillTreeTrainingIndicator({
+  label,
+  overBudget,
+}: {
+  label: string;
+  overBudget: boolean;
+}) {
+  return (
+    <HoverTapTooltip
+      content={<p className="text-xs leading-relaxed">{label}</p>}
+      side="bottom"
+      align="start"
+    >
+      <span
+        className={cn(
+          "mt-px h-2 w-2 shrink-0 rounded-full",
+          overBudget ? "bg-[var(--color-error)]" : "bg-[var(--color-accent)]",
+          overBudget ? "animate-pulse" : undefined,
+        )}
+        role="img"
+        aria-label={label}
+      />
     </HoverTapTooltip>
   );
 }
@@ -161,6 +191,11 @@ export function SkillTreePanel() {
     ? 0
     : getSkillLevelFromTraining(gameData.game, build, activeTree.skillId);
   const isTrainingMode = !isDestinyTree && skillWorkspaceMode === "training";
+  const trainingAssignedCount = !isDestinyTree
+    ? getStoredSkillTraining(gameData.game, build, activeTree.skillId)
+    : 0;
+  const hasTraining = trainingAssignedCount > 0;
+  const trainingOverBudget = !isDestinyTree && computed.trainingLevelsRemaining < 0;
   const { perks: overLevelPerks, skillIncreases, destinyPerksOverBudget } =
     getBuildPlayerLevelWarnings(gameData.game, build);
   const skillIncreaseConflict = skillIncreases.find(
@@ -267,9 +302,15 @@ export function SkillTreePanel() {
                   skillId={activeTree.skillId}
                   className="h-5 w-5 shrink-0 text-[var(--color-accent-muted)]"
                 />
-                <h2 className="truncate font-[family-name:var(--font-heading)] text-base font-semibold text-[var(--color-foreground)]">
-                  {activeTree.skillName}
-                </h2>
+                <h2 className={getMobileSkillTreeTitleClassName()}>{activeTree.skillName}</h2>
+                {hasTraining && (
+                  <SkillTreeTrainingIndicator
+                    overBudget={trainingOverBudget}
+                    label={formatLabel(labels.trainingAssignedIndicator, {
+                      count: trainingAssignedCount,
+                    })}
+                  />
+                )}
                 <SkillTreeWarningIcon
                   messages={warningMessages}
                   ariaLabel={labels.skillTreeWarning}
@@ -427,6 +468,14 @@ export function SkillTreePanel() {
             <div className="min-w-0">
               <div className="flex min-w-0 items-center gap-2">
                 <CardTitle className="min-w-0 truncate text-base">{activeTree.skillName}</CardTitle>
+                {hasTraining && (
+                  <SkillTreeTrainingIndicator
+                    overBudget={trainingOverBudget}
+                    label={formatLabel(labels.trainingAssignedIndicator, {
+                      count: trainingAssignedCount,
+                    })}
+                  />
+                )}
                 <SkillTreeWarningIcon
                   messages={warningMessages}
                   ariaLabel={labels.skillTreeWarning}
