@@ -120,6 +120,10 @@ export function SkillTreesSidebarPanel() {
           compact ? "p-1" : "p-2",
         )}
       >
+        {/*
+          On mobile/stacked layouts, use a taller card minimum so the mini tree preview
+          keeps its intended aspect ratio instead of looking vertically squashed.
+        */}
         <div
           ref={gridContainerRef}
           className={cn(
@@ -130,7 +134,7 @@ export function SkillTreesSidebarPanel() {
           style={{
             gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
             // Prevent the mini perk tree preview from collapsing when the viewport is short.
-            gridAutoRows: "minmax(6.5rem, auto)",
+            gridAutoRows: stackedLayout ? "minmax(7.5rem, auto)" : "minmax(6.5rem, auto)",
           }}
         >
           {trees.map((tree) => {
@@ -166,6 +170,7 @@ export function SkillTreesSidebarPanel() {
                 }}
                 className={cn(
                   "grid grid-rows-[auto_1fr] min-h-[6.5rem] gap-1 overflow-hidden rounded-[var(--radius-sm)] border text-left transition-colors",
+                  stackedLayout && "min-h-[7.5rem]",
                   compact ? "p-1" : "p-1.5",
                   hasProblem &&
                     "border-[var(--color-error)]/35 bg-[var(--color-error)]/[0.04]",
