@@ -154,6 +154,7 @@ interface BuildStore {
       defaultVariantName?: string;
       defaultVariantNotes?: string;
       updatedAt?: number;
+      modpackVersion?: string;
     }>,
     modpackVersion?: string,
   ) => void;
@@ -161,7 +162,7 @@ interface BuildStore {
   selectMilestone: (milestoneId: string | null) => void;
   createVariant: (name?: string) => void;
   copyVariant: (variantId: string | null) => void;
-  importVariant: (build: BuildState, name?: string, notes?: string) => void;
+  importVariant: (build: BuildState, name?: string, notes?: string, modpackVersion?: string) => void;
   deleteActiveVariant: () => void;
   renameActiveVariant: (name: string) => void;
   deleteVariant: (variantId: string | null) => void;
@@ -748,6 +749,9 @@ export const useBuildStore = create<BuildStore>()(
           const importedModpackVersion = modpackVersion ?? currentModpackVersion;
 
           const imported = entries.map((entry) => {
+            const entryModpackVersion = entry.modpackVersion?.trim()
+              ? entry.modpackVersion.trim()
+              : importedModpackVersion;
             const milestones = (entry.milestones ?? []).map((milestone) =>
               createMilestone(
                 milestone.name,
@@ -762,7 +766,7 @@ export const useBuildStore = create<BuildStore>()(
                 milestones,
                 entry.defaultVariantName,
               ),
-              modpackVersion: importedModpackVersion,
+              modpackVersion: entryModpackVersion,
             };
           });
           for (let i = 0; i < imported.length; i += 1) {
@@ -894,12 +898,17 @@ export const useBuildStore = create<BuildStore>()(
           });
         },
 
-        importVariant: (importedBuild, name, notes) => {
+        importVariant: (importedBuild, name, notes, modpackVersion) => {
           const { gameData, savedBuilds, activeBuildId, build } = get();
           if (!gameData) return;
 
-          const modpackVersion = gameData.game.manifest.version;
-          const syncedBuilds = syncActiveEntryBuild(savedBuilds, activeBuildId, build, modpackVersion);
+          const effectiveModpackVersion = modpackVersion ?? gameData.game.manifest.version;
+          const syncedBuilds = syncActiveEntryBuild(
+            savedBuilds,
+            activeBuildId,
+            build,
+            effectiveModpackVersion,
+          );
           const entry = getActiveSavedBuild(syncedBuilds, activeBuildId);
           if (!entry) return;
 
@@ -918,7 +927,7 @@ export const useBuildStore = create<BuildStore>()(
             milestones: [...entry.milestones, milestone],
             activeMilestoneId: milestone.id,
             updatedAt: Date.now(),
-            modpackVersion,
+            modpackVersion: effectiveModpackVersion,
           });
           const nextBuilds = updateActiveEntry(syncedBuilds, activeBuildId, () => nextEntry);
 

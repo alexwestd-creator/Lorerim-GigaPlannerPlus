@@ -800,7 +800,7 @@ export function BuildsPage() {
       createExportedBuild(
         name,
         entry?.build ?? build,
-        modpackVersion,
+        entry?.modpackVersion ?? modpackVersion,
         entry?.milestones ?? [],
         entry ? getDefaultVariantName(entry) : undefined,
         entry?.defaultVariantNotes,
