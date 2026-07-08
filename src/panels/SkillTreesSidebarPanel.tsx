@@ -68,8 +68,9 @@ export function SkillTreesSidebarPanel() {
 
   const { ref: gridContainerRef, width: gridWidth } = useContainerSize<HTMLDivElement>();
   const responsiveColumns = getSkillGridColumnCount(gridWidth, {
-    minCellWidth: stackedLayout ? 120 : 100,
-    maxColumns: stackedLayout ? 3 : 4,
+    // Keep cards readable: cap at 3 columns and fall back to 2 when cards get too narrow.
+    minCellWidth: stackedLayout ? 120 : 120,
+    maxColumns: 3,
   });
   const gridColumns = useThreeColumnLayout ? 3 : responsiveColumns;
   const trainingOverBudget = (computed?.trainingLevelsRemaining ?? 0) < 0;
@@ -126,7 +127,8 @@ export function SkillTreesSidebarPanel() {
           )}
           style={{
             gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
-            gridAutoRows: "auto",
+            // Prevent the mini perk tree preview from collapsing when the viewport is short.
+            gridAutoRows: "minmax(6.5rem, auto)",
           }}
         >
           {trees.map((tree) => {
@@ -161,7 +163,7 @@ export function SkillTreesSidebarPanel() {
                   }
                 }}
                 className={cn(
-                  "grid grid-rows-[auto_auto] gap-1 overflow-hidden rounded-[var(--radius-sm)] border text-left transition-colors",
+                  "grid grid-rows-[auto_auto] min-h-[6.5rem] gap-1 overflow-hidden rounded-[var(--radius-sm)] border text-left transition-colors",
                   compact ? "p-1" : "p-1.5",
                   hasProblem &&
                     "border-[var(--color-error)]/35 bg-[var(--color-error)]/[0.04]",
