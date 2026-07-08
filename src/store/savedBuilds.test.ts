@@ -10,6 +10,7 @@ import {
   isSavedBuildImported,
   markSavedBuildImported,
   mergeVariantNotesFromEntry,
+  migrateSavedBuildsModpackVersion,
   normalizeSavedBuild,
   setVariantNotesOnEntry,
   touchSavedBuild,
@@ -253,5 +254,22 @@ describe("updateSavedBuildInList imported markers", () => {
 
     expect(isSavedBuildImported(synced)).toBe(true);
     expect(synced.modpackVersion).toBe(oldModpackVersion);
+  });
+});
+
+describe("migrateSavedBuildsModpackVersion", () => {
+  it("stamps missing/blank modpackVersion values using provided manifest version", () => {
+    const build = createTestBuildState();
+    const builds = [
+      createSavedBuild("A", build),
+      { ...createSavedBuild("B", build), modpackVersion: "" },
+      { ...createSavedBuild("C", build), modpackVersion: "  v1.2.3 " },
+    ];
+
+    const migrated = migrateSavedBuildsModpackVersion(builds, "5.0.4.2");
+
+    expect(migrated.find((b) => b.name === "A")?.modpackVersion).toBe("5.0.4.2");
+    expect(migrated.find((b) => b.name === "B")?.modpackVersion).toBe("5.0.4.2");
+    expect(migrated.find((b) => b.name === "C")?.modpackVersion).toBe("  v1.2.3 ");
   });
 });

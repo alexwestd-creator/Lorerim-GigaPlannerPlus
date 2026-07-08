@@ -147,7 +147,24 @@ export function normalizeSavedBuild(entry: SavedBuild): SavedBuild {
     milestones: entry.milestones ?? [],
     activeMilestoneId: entry.activeMilestoneId ?? null,
     importedAt: entry.importedAt ?? null,
+    modpackVersion: entry.modpackVersion?.trim() || entry.modpackVersion,
   };
+}
+
+/**
+ * Migration helper for older saved build libraries that predate `modpackVersion`.
+ * We stamp any missing/blank per-build version using the provided manifest version.
+ */
+export function migrateSavedBuildsModpackVersion(
+  savedBuilds: SavedBuild[],
+  modpackVersion: string,
+): SavedBuild[] {
+  const trimmed = modpackVersion.trim();
+  return savedBuilds.map((entry) => {
+    const raw = entry.modpackVersion?.trim();
+    if (raw) return entry;
+    return { ...entry, modpackVersion: trimmed };
+  });
 }
 
 export function getVariantNotes(entry: SavedBuild, variantId: string | null): string {

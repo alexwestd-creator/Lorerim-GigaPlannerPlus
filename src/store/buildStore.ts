@@ -38,6 +38,7 @@ import {
   getVariantName,
   getVariantNotes,
   mergeVariantNotesFromEntry,
+  migrateSavedBuildsModpackVersion,
   markSavedBuildImported,
   migrateLegacyStorage,
   nextBuildName,
@@ -268,12 +269,22 @@ export const useBuildStore = create<BuildStore>()(
         init: (data) => {
           const { build } = get();
           const baseLevel = data.game.mechanics.leveling.baseLevel;
+          const currentModpackVersion = data.game.manifest.version;
+          const nextSavedBuilds = migrateSavedBuildsModpackVersion(
+            get().savedBuilds,
+            currentModpackVersion,
+          );
           const migratedBuild = reconcileBuild(data.game, migrateBuildState({
             ...build,
             playerLevel: build.playerLevel ?? baseLevel,
             characterOptionChoices: build.characterOptionChoices ?? {},
           }));
-          set({ gameData: data, build: migratedBuild, computed: recompute(data, migratedBuild) });
+          set({
+            gameData: data,
+            savedBuilds: nextSavedBuilds,
+            build: migratedBuild,
+            computed: recompute(data, migratedBuild),
+          });
         },
 
         setRace: (raceId) => {
