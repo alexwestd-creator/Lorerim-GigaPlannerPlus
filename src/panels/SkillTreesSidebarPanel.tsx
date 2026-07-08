@@ -126,7 +126,7 @@ export function SkillTreesSidebarPanel() {
           )}
           style={{
             gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
-            gridAutoRows: "minmax(6.5rem, auto)",
+            gridAutoRows: "auto",
           }}
         >
           {trees.map((tree) => {
@@ -161,8 +161,7 @@ export function SkillTreesSidebarPanel() {
                   }
                 }}
                 className={cn(
-                  "grid grid-rows-[auto_minmax(0,1fr)] gap-1 overflow-hidden rounded-[var(--radius-sm)] border text-left transition-colors",
-                  "min-h-[6.5rem]",
+                  "grid grid-rows-[auto_auto] gap-1 overflow-hidden rounded-[var(--radius-sm)] border text-left transition-colors",
                   compact ? "p-1" : "p-1.5",
                   hasProblem &&
                     "border-[var(--color-error)]/35 bg-[var(--color-error)]/[0.04]",
@@ -218,7 +217,7 @@ export function SkillTreesSidebarPanel() {
                     {skillLevel}
                   </span>
                 </div>
-                <div className="flex min-h-0 items-center justify-center overflow-hidden p-px">
+                  <div className="flex w-full min-h-0 aspect-[3/4] items-center justify-center overflow-hidden p-px">
                   <PerkTreeMiniView
                     tree={tree}
                     compact
@@ -236,7 +235,7 @@ export function SkillTreesSidebarPanel() {
           className={cn(
             "mt-2 flex shrink-0 flex-col gap-2 border-t border-[var(--color-border)]/50 pt-2",
             // Keeps the search input visible when the sidebar is scrolled.
-            "sticky bottom-0 z-20 bg-[var(--color-background)]/90 backdrop-blur",
+            "sticky bottom-0 z-20 bg-[var(--color-surface)]/85 backdrop-blur-sm",
           )}
         >
           <PickerSearchInput
