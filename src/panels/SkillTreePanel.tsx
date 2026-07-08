@@ -453,50 +453,51 @@ export function SkillTreePanel() {
   }
 
   return (
-    <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <WorkspacePanelHeader
-        back={{
-          label: setupLabels.backToOverview ?? setupLabels.title,
-          onClick: () => setMiddleView("character-info"),
-        }}
-        titleRow={
-          <div className="flex min-w-0 gap-2">
-            <SkillIcon
-              skillId={activeTree.skillId}
-              className="h-5 w-5 shrink-0 text-[var(--color-accent-muted)]"
-            />
-            <div className="min-w-0">
-              <div className="flex min-w-0 items-center gap-2">
-                <CardTitle className="min-w-0 truncate text-base">{activeTree.skillName}</CardTitle>
-                {hasTraining && (
-                  <SkillTreeTrainingIndicator
-                    overBudget={trainingOverBudget}
-                    label={formatLabel(labels.trainingAssignedIndicator, {
-                      count: trainingAssignedCount,
-                    })}
+    <Card className="flex min-h-0 flex-1 flex-col">
+      <div className="sticky top-0 z-10 overflow-hidden rounded-t-[var(--radius-lg)] bg-[var(--color-surface)]">
+        <WorkspacePanelHeader
+          back={{
+            label: setupLabels.backToOverview ?? setupLabels.title,
+            onClick: () => setMiddleView("character-info"),
+          }}
+          titleRow={
+            <div className="flex min-w-0 gap-2">
+              <SkillIcon
+                skillId={activeTree.skillId}
+                className="h-5 w-5 shrink-0 text-[var(--color-accent-muted)]"
+              />
+              <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  <CardTitle className="min-w-0 truncate text-base">{activeTree.skillName}</CardTitle>
+                  {hasTraining && (
+                    <SkillTreeTrainingIndicator
+                      overBudget={trainingOverBudget}
+                      label={formatLabel(labels.trainingAssignedIndicator, {
+                        count: trainingAssignedCount,
+                      })}
+                    />
+                  )}
+                  <SkillTreeWarningIcon
+                    messages={warningMessages}
+                    ariaLabel={labels.skillTreeWarning}
                   />
-                )}
-                <SkillTreeWarningIcon
-                  messages={warningMessages}
-                  ariaLabel={labels.skillTreeWarning}
-                />
+                </div>
+                <p className="mt-1 text-xs text-[var(--color-muted)]">
+                  {isTrainingMode ? (
+                    labels.trainingModeActive
+                  ) : (
+                    <>
+                      <span className="font-medium tabular-nums text-[var(--color-foreground)]">
+                        {selectedCount}/{activeTree.perks.length}
+                      </span>{" "}
+                      {labels.perksSelected}
+                    </>
+                  )}
+                </p>
               </div>
-              <p className="mt-1 text-xs text-[var(--color-muted)]">
-                {isTrainingMode ? (
-                  labels.trainingModeActive
-                ) : (
-                  <>
-                    <span className="font-medium tabular-nums text-[var(--color-foreground)]">
-                      {selectedCount}/{activeTree.perks.length}
-                    </span>{" "}
-                    {labels.perksSelected}
-                  </>
-                )}
-              </p>
             </div>
-          </div>
-        }
-      />
+          }
+        />
 
       <div
         className={cn(
@@ -612,6 +613,8 @@ export function SkillTreePanel() {
             )}
           </div>
         )}
+      </div>
+
       </div>
 
       <CardContent
