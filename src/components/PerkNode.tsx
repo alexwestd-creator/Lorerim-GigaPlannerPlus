@@ -24,6 +24,7 @@ import {
   getPerkBadgeContainerStyle,
   type PerkBadgePlacement,
 } from "@/lib/perkBadgeLayout";
+import { canUpgradePerkStackRank, formatPerkStackRank, type PerkStackRank } from "@/lib/perkTreeGrid";
 import { cn } from "@/lib/utils";
 import type { PerkBadgeVisibility } from "@/store/uiStore";
 
@@ -61,7 +62,8 @@ export interface PerkNodeProps {
   requirements: { skillReq: number | null; playerLevelReq: number | null };
   badgeRequirements: { skillReq: number | null; playerLevelReq: number | null };
   takeTargetId: string;
-  stackRank: { current: number; total: number } | null;
+  stackRank: PerkStackRank | null;
+  canUpgradeRank: boolean;
   nextRank: Perk | undefined;
   isSelected: boolean;
   isAvailable: boolean;
@@ -94,6 +96,7 @@ export function PerkNode({
   badgeRequirements,
   takeTargetId,
   stackRank,
+  canUpgradeRank,
   nextRank,
   isSelected,
   isAvailable,
@@ -288,8 +291,7 @@ export function PerkNode({
     [],
   );
 
-  const isPartialRank =
-    isSelected && stackRank !== null && stackRank.current < stackRank.total;
+  const isPartialRank = isSelected && stackRank !== null && canUpgradePerkStackRank(stackRank, canUpgradeRank);
 
   const labelFontPx = Math.max(8, Math.round(nodeDiameterPx * 0.30));
   const searchMatchGlow = isSearchMatch ? resolvePerkSearchMatchGlow(nodeDiameterPx) : null;
@@ -364,7 +366,7 @@ export function PerkNode({
       <p className="font-semibold text-[var(--color-accent)]">{perk.name}</p>
       {stackRank && (
         <p className="mt-0.5 text-xs text-[var(--color-muted)]">
-          {labels.perkRank}: {stackRank.current}/{stackRank.total}
+          {labels.perkRank}: {formatPerkStackRank(stackRank)}
         </p>
       )}
       {requirements.skillReq !== null && (
@@ -391,7 +393,7 @@ export function PerkNode({
         {isConflict
           ? labels.buildProblemLegend
           : isSelected
-            ? nextRank
+            ? canUpgradeRank
               ? labels.upgradeAvailable
               : labels.selected
             : isLocked
@@ -467,9 +469,7 @@ export function PerkNode({
               <span className={requirementBadgeClassName}>{requirementLabel}</span>
             )}
             {stackRank && (
-              <span className={stackRankBadgeClassName}>
-                {stackRank.current}/{stackRank.total}
-              </span>
+              <span className={stackRankBadgeClassName}>{formatPerkStackRank(stackRank)}</span>
             )}
           </div>
         ) : null}

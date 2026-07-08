@@ -4,8 +4,10 @@ import { cn } from "@/lib/utils";
 import {
   computePerkTreeEdges,
   getPerkGridCenter,
+  getPerkAllocationRank,
   getPerkPositionKey,
   getPerkStackRank,
+  canUpgradePerkStackRank,
   getPerkTreeCompactViewBox,
   getPerkTreeGridBounds,
   getVisiblePerksForTree,
@@ -140,6 +142,7 @@ export function PerkTreeMiniView({
 }: PerkTreeMiniViewProps) {
   const glowFilterId = useId().replace(/:/g, "");
   const selectedPerkIds = useBuildStore((s) => s.build.selectedPerkIds);
+  const perkPointsRemaining = useBuildStore((s) => s.computed?.perkPointsRemaining ?? 0);
   const gridBounds = useMemo(() => getPerkTreeGridBounds(tree), [tree]);
   const { width, height, origin } = gridBounds;
 
@@ -178,13 +181,22 @@ export function PerkTreeMiniView({
   const partialRankPositionKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const [positionKey, stack] of stacksByPosition) {
-      const stackRank = getPerkStackRank(stack, selectedPerkIds);
-      if (stackRank && stackRank.current > 0 && stackRank.current < stackRank.total) {
+      const stackRank =
+        stack.length > 1
+          ? getPerkStackRank(stack, selectedPerkIds)
+          : getPerkAllocationRank(stack[0], selectedPerkIds);
+      if (!stackRank || stackRank.current <= 0) continue;
+
+      const canAllocateMore = stackRank.unbounded
+        ? perkPointsRemaining > 0
+        : stackRank.total !== undefined && stackRank.current < stackRank.total;
+
+      if (canUpgradePerkStackRank(stackRank, canAllocateMore)) {
         keys.add(positionKey);
       }
     }
     return keys;
-  }, [stacksByPosition, selectedPerkIds]);
+  }, [stacksByPosition, selectedPerkIds, perkPointsRemaining]);
 
   const viewBox = useMemo(() => {
     if (!compact) {
