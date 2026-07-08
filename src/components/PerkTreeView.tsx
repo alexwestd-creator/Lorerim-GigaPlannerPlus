@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { getPerkNodeRequirements } from "@/lib/perkRequirements";
 import {
   computePerkTreeEdgesPercentInBounds,
+  getPerkAllocationRank,
   getNextRankInStack,
   getPerkPercentPositionInBounds,
   getPerkPositionKey,
@@ -96,6 +97,7 @@ interface PerkTreeViewProps {
   labels: Record<string, string>;
   conflictPerkIds?: string[];
   playerLevelConflictPerkIds?: string[];
+  searchPerkPositionKeys?: ReadonlySet<string>;
   /** Scale the tree to fit and center within the parent area. */
   fit?: boolean;
   className?: string;
@@ -106,6 +108,7 @@ function PerkTreeView({
   labels,
   conflictPerkIds = [],
   playerLevelConflictPerkIds = [],
+  searchPerkPositionKeys,
   fit = false,
   className,
 }: PerkTreeViewProps) {
@@ -469,7 +472,10 @@ function PerkTreeView({
       {paintOrderedPerks.map((perk, index) => {
         const positionKey = getPerkPositionKey(perk.position);
         const stack = stacksByPosition.get(positionKey) ?? [perk];
-        const stackRank = getPerkStackRank(stack, build.selectedPerkIds);
+        const stackRank =
+          stack.length > 1
+            ? getPerkStackRank(stack, build.selectedPerkIds)
+            : getPerkAllocationRank(perk, build.selectedPerkIds);
         const nextRank = getNextRankInStack(stack, build.selectedPerkIds);
         const isSelected = build.selectedPerkIds.includes(perk.id);
         const prereqsMet = arePrerequisitesMet(gameData.game, build, perk);
@@ -509,6 +515,8 @@ function PerkTreeView({
 
         const isAvailable = !isSelected && prereqsMet && meetsPerkReq;
         const isLocked = !isSelected && (!prereqsMet || !meetsPerkReq);
+        const canUpgradeRank =
+          isSelected && (stackRank?.unbounded ? prereqsMet && meetsPerkReq : nextRank !== undefined);
 
         return (
           <PerkNode
@@ -519,11 +527,13 @@ function PerkTreeView({
             badgeRequirements={nodeBadgeRequirements}
             takeTargetId={takeTargetId}
             stackRank={stackRank}
+            canUpgradeRank={canUpgradeRank}
             nextRank={nextRank}
             isSelected={isSelected}
             isAvailable={isAvailable}
             isLocked={isLocked}
             isConflict={isConflict}
+            isSearchMatch={searchPerkPositionKeys?.has(positionKey) ?? false}
             isInteractive
             paintOrder={20 + index}
             nodeDiameterPx={nodeDiameterPx}
