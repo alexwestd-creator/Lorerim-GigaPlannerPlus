@@ -126,7 +126,7 @@ export function SkillTreesSidebarPanel() {
           )}
           style={{
             gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
-            gridAutoRows: "auto",
+            gridAutoRows: "minmax(6.5rem, auto)",
           }}
         >
           {trees.map((tree) => {
@@ -161,7 +161,8 @@ export function SkillTreesSidebarPanel() {
                   }
                 }}
                 className={cn(
-                  "grid grid-rows-[auto_auto] gap-1 overflow-hidden rounded-[var(--radius-sm)] border text-left transition-colors",
+                  "grid grid-rows-[auto_minmax(0,1fr)] gap-1 overflow-hidden rounded-[var(--radius-sm)] border text-left transition-colors",
+                  "min-h-[6.5rem]",
                   compact ? "p-1" : "p-1.5",
                   hasProblem &&
                     "border-[var(--color-error)]/35 bg-[var(--color-error)]/[0.04]",
@@ -217,7 +218,7 @@ export function SkillTreesSidebarPanel() {
                     {skillLevel}
                   </span>
                 </div>
-                  <div className="flex w-full min-h-0 aspect-[3/4] items-center justify-center overflow-hidden p-px">
+                <div className="flex min-h-0 items-center justify-center overflow-hidden p-px">
                   <PerkTreeMiniView
                     tree={tree}
                     compact
