@@ -5,7 +5,7 @@ import { SkillIcon } from "@/components/SkillIcon";
 import { ResetPerksButton } from "@/components/ResetPerksButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useContainerSize } from "@/lib/useContainerSize";
+import { getSkillGridColumnCount, useContainerSize } from "@/lib/useContainerSize";
 import { PickerSearchInput } from "@/components/PickerSearchInput";
 import {
   getBuildPlayerLevelWarnings,
@@ -27,7 +27,6 @@ import {
   usePlannerStackedLayout,
   usePlannerThreeColumnLayout,
 } from "@/layout/plannerLayout";
-import { getSkillTreesSidebarGridColumns } from "@/lib/skillTreesSidebarGrid";
 
 const RESET_ICON_ONLY_MAX_WIDTH = 280;
 const CENTER_SWIPE_PANE_INDEX = 1;
@@ -68,13 +67,11 @@ export function SkillTreesSidebarPanel() {
   const skillIncreaseConflictIds = new Set(skillIncreases.map((skill) => skill.skillId));
 
   const { ref: gridContainerRef, width: gridWidth } = useContainerSize<HTMLDivElement>();
-  const gapPx = compact ? 4 : 6; // tailwind: gap-1=4px, gap-1.5=6px
-  const originalCardWidthPx = stackedLayout ? 120 : 100;
-  const gridColumns = getSkillTreesSidebarGridColumns({
-    containerWidthPx: gridWidth,
-    gapPx,
-    originalCardWidthPx,
+  const responsiveColumns = getSkillGridColumnCount(gridWidth, {
+    minCellWidth: stackedLayout ? 120 : 100,
+    maxColumns: stackedLayout ? 3 : 4,
   });
+  const gridColumns = useThreeColumnLayout ? 3 : responsiveColumns;
   const trainingOverBudget = (computed?.trainingLevelsRemaining ?? 0) < 0;
   const perkSearchTokens = useMemo(() => getPerkSearchTokens(perkSearchQuery), [perkSearchQuery]);
   const perkSearchPositionKeysBySkillId = useMemo(
@@ -120,10 +117,6 @@ export function SkillTreesSidebarPanel() {
           compact ? "p-1" : "p-2",
         )}
       >
-        {/*
-          On mobile/stacked layouts, use a taller card minimum so the mini tree preview
-          keeps its intended aspect ratio instead of looking vertically squashed.
-        */}
         <div
           ref={gridContainerRef}
           className={cn(
@@ -134,7 +127,7 @@ export function SkillTreesSidebarPanel() {
           style={{
             gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
             // Prevent the mini perk tree preview from collapsing when the viewport is short.
-            gridAutoRows: stackedLayout ? "minmax(7.5rem, auto)" : "minmax(6.5rem, auto)",
+            gridAutoRows: "minmax(6.5rem, auto)",
           }}
         >
           {trees.map((tree) => {
@@ -169,8 +162,8 @@ export function SkillTreesSidebarPanel() {
                   }
                 }}
                 className={cn(
-                  "grid grid-rows-[auto_1fr] min-h-[6.5rem] gap-1 overflow-hidden rounded-[var(--radius-sm)] border text-left transition-colors",
-                  stackedLayout && "min-h-[7.5rem]",
+                  "grid grid-rows-[auto_minmax(0,1fr)] gap-1 overflow-hidden rounded-[var(--radius-sm)] border text-left transition-colors",
+                  "min-h-[6.5rem]",
                   compact ? "p-1" : "p-1.5",
                   hasProblem &&
                     "border-[var(--color-error)]/35 bg-[var(--color-error)]/[0.04]",
@@ -226,7 +219,7 @@ export function SkillTreesSidebarPanel() {
                     {skillLevel}
                   </span>
                 </div>
-                <div className="flex min-h-0 w-full max-h-full self-center aspect-[3/4] items-center justify-center overflow-hidden p-px">
+                <div className="flex min-h-0 items-center justify-center overflow-hidden p-px">
                   <PerkTreeMiniView
                     tree={tree}
                     compact
