@@ -82,8 +82,7 @@ export function SkillTreesSidebarPanel() {
   return (
     <Card
       className={cn(
-        "flex flex-col overflow-hidden",
-        stackedLayout ? "min-h-0 flex-1" : "h-fit max-h-full",
+        "flex min-h-0 flex-col overflow-hidden max-h-full",
       )}
     >
       <CardHeader
@@ -233,7 +232,13 @@ export function SkillTreesSidebarPanel() {
           })}
         </div>
 
-        <div className="mt-2 flex shrink-0 flex-col gap-2 border-t border-[var(--color-border)]/50 pt-2">
+        <div
+          className={cn(
+            "mt-2 flex shrink-0 flex-col gap-2 border-t border-[var(--color-border)]/50 pt-2",
+            // Keeps the search input visible when the sidebar is scrolled.
+            "sticky bottom-0 z-20 bg-[var(--color-background)]/90 backdrop-blur",
+          )}
+        >
           <PickerSearchInput
             value={perkSearchQuery}
             onChange={(next) => setPerkSearchQuery(next)}
